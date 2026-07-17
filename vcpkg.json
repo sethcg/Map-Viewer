@@ -1,0 +1,12 @@
+{
+  "version": "1.0.0",
+  "dependencies": [
+    "sdl3",
+    "sdl3-ttf",
+    "glad",
+    "glm",
+    "proj",
+    "sqlite3",
+    "nlohmann-json"
+  ]
+}

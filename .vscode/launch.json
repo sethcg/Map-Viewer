@@ -1,0 +1,29 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug (Windows-VS2026)",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}\\build\\windows-vs2026\\Debug\\main.exe",
+            "cwd": "${workspaceFolder}\\build\\windows-vs2026\\Debug",
+            "args": [],
+            "stopAtEntry": false,
+            "environment": [],
+            "console": "newExternalWindow",
+            "preLaunchTask": "Build Debug"
+        },
+        {
+            "name": "Release (Windows-VS2026)",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}\\build\\windows-vs2026\\Release\\main.exe",
+            "cwd": "${workspaceFolder}\\build\\windows-vs2026\\Release",
+            "args": [],
+            "stopAtEntry": false,
+            "environment": [],
+            "console": "newExternalWindow",
+            "preLaunchTask": "Build Release"
+        }
+    ]
+}

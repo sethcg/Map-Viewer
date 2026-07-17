@@ -1,0 +1,54 @@
+{
+  "version": 8,
+  "configurePresets": [
+    {
+      "name": "default",
+      "generator": "Visual Studio 18 2026",
+      "architecture": "x64",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "toolchainFile": "./vcpkg/scripts/buildsystems/vcpkg.cmake"
+    },
+    {
+      "name": "windows-vs2026",
+      "inherits": "default",
+      "displayName": "Windows with Visual Studio 2026",
+      "description": "Windows native build using Visual Studio 2026 generator and default toolchain/compiler",
+      "generator": "Visual Studio 18 2026"
+    },
+    {
+      "name": "windows-vs2022",
+      "inherits": "default",
+      "displayName": "Windows with Visual Studio 2022",
+      "description": "Windows native build using Visual Studio 2022 generator and default toolchain/compiler",
+      "generator": "Visual Studio 17 2022"
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "windows-vs2026-release",
+      "configuration": "Release",
+      "configurePreset": "windows-vs2026"
+    },
+    {
+      "name": "windows-vs2026-debug",
+      "configuration": "Debug",
+      "configurePreset": "windows-vs2026"
+    },
+    {
+      "name": "windows-vs2022-release",
+      "configuration": "Release",
+      "configurePreset": "windows-vs2022"
+    },
+    {
+      "name": "windows-vs2022-debug",
+      "configuration": "Debug",
+      "configurePreset": "windows-vs2022"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "default",
+      "configurePreset": "default"
+    }
+  ]
+}
