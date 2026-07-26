@@ -1,6 +1,9 @@
 # BUILD FOLDER
 /build
 
+#DATA FOLDER
+/data
+
 # LINE COUNT FILE
 line-count.txt
 

@@ -107,6 +107,8 @@ namespace UserInterface {
         ImGui::SetNextWindowSizeConstraints(minSize, maxSize);
         ImGui::Begin("##CONTROL_PANEL", nullptr, ImGuiWindowFlags_NoCollapse);
 
+        ImGui::Button("Placeholder");
+
         ImGui::End();
     }
 
