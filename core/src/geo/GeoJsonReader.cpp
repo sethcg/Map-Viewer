@@ -38,9 +38,46 @@ bool GeoJsonReader::open(const std::string& filename) {
         );
 
     if (!dataset) {
-        SDL_Log("FAILED TO OPEN GEOJSON: %s\n", filename);
+        SDL_Log("FAILED TO OPEN GEOJSON: %s", filename.c_str());
         return false;
     }
+
+    OGRLayer* layer = dataset->GetLayer(0);
+    if (!layer) {
+        SDL_Log("FAILED TO GET LAYER");
+        return false;
+    }
+
+    OGRSpatialReference* source = layer->GetSpatialRef();
+    OGRSpatialReference target;
+    target.importFromEPSG(3857);
+    target.SetAxisMappingStrategy(OAMS_TRADITIONAL_GIS_ORDER);
+
+    if (source) {
+        source->SetAxisMappingStrategy(OAMS_TRADITIONAL_GIS_ORDER);
+        if (source->IsSame(&target)) {
+            SDL_Log("DATA ALREADY EPSG:3857 - NO TRANSFORM");
+            transform = nullptr;
+        } else {
+            transform = OGRCreateCoordinateTransformation(source, &target);
+            if (!transform) {
+                SDL_Log("FAILED TO CREATE CRS TRANSFORM");
+                return false;
+            }
+            SDL_Log("CREATED CRS TRANSFORM -> EPSG:3857");
+        }
+    } else {
+        SDL_Log("NO CRS FOUND - ASSUMING EPSG:4326");
+        OGRSpatialReference assumed;
+        assumed.importFromEPSG(4326);
+        assumed.SetAxisMappingStrategy(OAMS_TRADITIONAL_GIS_ORDER);
+        transform = OGRCreateCoordinateTransformation(&assumed, &target);
+        if (!transform) {
+            SDL_Log("FAILED TO CREATE DEFAULT TRANSFORM");
+            return false;
+        }
+    }
+
     return true;
 }
 
@@ -58,23 +95,41 @@ void GeoJsonReader::updateBounds(double x, double y) {
     bounds.maxY = std::max(bounds.maxY, y);
 }
 
+bool GeoJsonReader::isVirginia(const OGREnvelope& env) {
+    // APPROXIMATE VA EPSG:3857 BOUNDS
+    return
+        env.MinX > -9500000 &&
+        env.MaxX < -8200000 &&
+        env.MinY > 3600000 &&
+        env.MaxY < 5100000;
+}
+
 std::vector<GeoFeature> GeoJsonReader::readAll() {
     std::vector<GeoFeature> result;
-    if (!dataset)
-        return result;
+    if (!dataset) return result;
 
     OGRLayer* layer = dataset->GetLayer(0);
+
+    if (!layer) return result;
+
     layer->ResetReading();
 
     OGRFeature* feature;
     while ((feature = layer->GetNextFeature()) != nullptr) {
         OGRGeometry* geometry = feature->GetGeometryRef();
+
+        // OGREnvelope env;
+        // geometry->getEnvelope(&env);
+        // SDL_Log(
+        //     "POLY RAW %.0f %.0f %.0f %.0f",
+        //     env.MinX,
+        //     env.MinY,
+        //     env.MaxX,
+        //     env.MaxY
+        // );
+
         if (geometry) {
-            OGRGeometry* simplified = geometry->SimplifyPreserveTopology(5.0);
-            if (simplified) {
-                result.push_back(processGeometry(simplified));
-                OGRGeometryFactory::destroyGeometry(simplified);
-            }
+            processGeometry(geometry, result);
         }
         OGRFeature::DestroyFeature(feature);
     }
@@ -82,47 +137,89 @@ std::vector<GeoFeature> GeoJsonReader::readAll() {
     return result;
 }
 
-GeoFeature GeoJsonReader::processGeometry(OGRGeometry* geometry) {
-    GeoFeature feature;
-    auto type = wkbFlatten(geometry->getGeometryType());
+void GeoJsonReader::processGeometry(OGRGeometry* geometry, std::vector<GeoFeature>& out) {
+    if (!geometry)
+        return;
 
-    switch(type) {
-        case wkbPoint:
-        {
-            feature.type = GeometryType::Point;
-            auto* point = geometry->toPoint();
-            double x = point->getX();
-            double y = point->getY();
-            transformPoint(x, y);
-            updateBounds(x, y);
-            feature.vertices.push_back({ x, y });
-            break;
-        }
-        case wkbLineString:
-        {
-            feature.type = GeometryType::LineString;
-            processLineString(geometry->toLineString(), feature);
-            break;
-        }
-        case wkbPolygon:
-        {
-            feature.type = GeometryType::Polygon;
-            processPolygon(geometry->toPolygon(), feature);
-            break;
-        }
-        case wkbMultiPolygon:
-        {
-            feature.type = GeometryType::Polygon;
-            auto* multi = geometry->toMultiPolygon();
-            for(int i = 0; i < multi->getNumGeometries(); i++) {
-                processPolygon(multi->getGeometryRef(i)->toPolygon(), feature);
-            }
-            break;
-        }
-        default:
-            break;
+    switch (wkbFlatten(geometry->getGeometryType())) {
+
+    case wkbPoint:
+    {
+        GeoFeature feature;
+        feature.type = GeometryType::Point;
+        feature.id = nextFeatureID++;
+
+        auto* point = geometry->toPoint();
+
+        double x = point->getX();
+        double y = point->getY();
+
+        transformPoint(x, y);
+        updateBounds(x, y);
+
+        feature.vertices.push_back({ x, y, (float) feature.id});
+        out.push_back(std::move(feature));
+        break;
     }
-    return feature;
+
+    case wkbLineString:
+    {
+        GeoFeature feature;
+        feature.type = GeometryType::LineString;
+        feature.id = nextFeatureID++;
+
+        processLineString(
+            geometry->toLineString(),
+            feature
+        );
+        out.push_back(std::move(feature));
+        break;
+    }
+
+    case wkbPolygon:
+    {
+        OGREnvelope env;
+        geometry->getEnvelope(&env);
+        if (!isVirginia(env)) break;
+
+        GeoFeature feature;
+        feature.type = GeometryType::Polygon;
+        feature.id = nextFeatureID++;
+
+        processPolygon(geometry->toPolygon(), feature);
+        if (!feature.vertices.empty())
+            out.push_back(std::move(feature));
+        break;
+    }
+
+    case wkbMultiPolygon:
+    {
+        auto* multi = geometry->toMultiPolygon();
+        // SDL_Log("MULTIPOLYGON CONTAINS %d POLYGONS", multi->getNumGeometries());
+
+        for (int i = 0; i < multi->getNumGeometries(); ++i) {
+            auto* poly = multi->getGeometryRef(i)->toPolygon();
+            if (!poly) continue;
+
+            OGREnvelope env;
+            poly->getEnvelope(&env);
+            if (!isVirginia(env)) continue;
+            
+            GeoFeature feature;
+            feature.type = GeometryType::Polygon;
+            feature.id = nextFeatureID++;
+
+            processPolygon(poly, feature);
+
+            if (!feature.vertices.empty())
+                out.push_back(std::move(feature));
+        }
+        break;
+    }
+
+    default:
+        break;
+    }
 }
 
 void GeoJsonReader::processLineString(OGRLineString* line,GeoFeature& feature) {
@@ -132,72 +229,97 @@ void GeoJsonReader::processLineString(OGRLineString* line,GeoFeature& feature) {
         double y = line->getY(i);
         transformPoint(x, y);
         updateBounds(x, y);
-        feature.vertices.push_back({x, y});
+        feature.vertices.push_back({x, y, (float) feature.id});
     }
 }
 
-// void GeoJsonReader::processPolygon(OGRPolygon* polygon, GeoFeature& feature) {
-//     auto processRing =
-//     [&](OGRLinearRing* ring) {
-//         feature.ringStarts.push_back(feature.vertices.size());
-//         int count = ring->getNumPoints();
-
-//         for(int i = 0; i < count - 1; i++) {
-//             double x = ring->getX(i);
-//             double y = ring->getY(i);
-
-//             transformPoint(x, y);
-//             updateBounds(x, y);
-
-//             feature.vertices.push_back({x, y});
-//         }
-//     };
-
-//     // EXTERIOR BOUNDARY
-//     processRing(polygon->getExteriorRing());
-
-//     // HOLES
-//     for(int i = 0; i < polygon->getNumInteriorRings(); i++) {
-//         processRing( polygon->getInteriorRing(i));
-//     }
-// }
-
 void GeoJsonReader::processPolygon(OGRPolygon* polygon, GeoFeature& feature) {
-    constexpr double MIN_HOLE_AREA = 100000.0; // ~316m x 316m
+    if (!polygon) return;
 
-    auto processRing =
-    [&](OGRLinearRing* ring) {
+    constexpr double MIN_HOLE_AREA = 100000.0;
+    constexpr int MAX_HOLES = 32;
+
+    auto processRing = [&](OGRLinearRing* ring) {
+        if (!ring) return;
+
         feature.ringStarts.push_back(feature.vertices.size());
 
         int count = ring->getNumPoints();
-        for (int i = 0; i < count - 1; i++) {
+        if (count < 2) return;
+
+        for (int i = 0; i < count - 1; ++i) {
             double x = ring->getX(i);
             double y = ring->getY(i);
 
             transformPoint(x, y);
             updateBounds(x, y);
 
-            feature.vertices.push_back({x, y});
+            feature.vertices.push_back({x, y, (float) feature.id});
         }
     };
 
-    // EXTERIOR BOUNDARY
-    processRing(polygon->getExteriorRing());
 
-    // HOLES
-    for (int i = 0; i < polygon->getNumInteriorRings(); i++) {
+    // -------------------------------
+    // Exterior ring normalization
+    // Earcut expects outer rings CCW
+    // -------------------------------
+    OGRLinearRing* exterior = polygon->getExteriorRing();
+    if (exterior) {
+        if (exterior->isClockwise()) {
+            exterior->reverseWindingOrder();
+        }
+        processRing(exterior);
+    }
+
+
+    struct Hole {
+        OGRLinearRing* ring;
+        double area;
+    };
+
+    int holeCount = polygon->getNumInteriorRings();
+    if (holeCount > 1000) {
+        // SDL_Log("LARGE POLYGON: %d HOLES, KEEPING EXTERIOR ONLY", holeCount);
+        processRing(polygon->getExteriorRing());
+        return;
+    }
+
+    std::vector<Hole> validHoles;
+    validHoles.reserve(holeCount);
+
+    // -------------------------------
+    // Hole normalization
+    // Earcut expects holes CW
+    // -------------------------------
+    for (int i = 0; i < holeCount; ++i) {
         OGRLinearRing* ring = polygon->getInteriorRing(i);
 
-        // MEASURE HOLE AREA
-        OGRPolygon holePolygon;
-        OGRLinearRing* ringCopy = ring->clone();
-        holePolygon.addRingDirectly(ringCopy);
+        if (!ring) continue;
 
-        // SKIP OVER TINY HOLES
-        double area = holePolygon.get_Area();
-        if (area < MIN_HOLE_AREA)
-            continue;
-        
-        processRing(ring);
+        double area = std::abs(ring->get_Area());
+
+        if (area < MIN_HOLE_AREA) continue;
+
+        if (!ring->isClockwise()) {
+            ring->reverseWindingOrder();
+        }
+        validHoles.push_back({ ring, area });
+    }
+
+
+    if (validHoles.size() > MAX_HOLES) {
+        SDL_Log("POLYGON HAS %zu HOLES, KEEPING LARGEST %d", validHoles.size(), MAX_HOLES);
+        std::sort(
+            validHoles.begin(),
+            validHoles.end(),
+            [](const Hole& a, const Hole& b) {
+                return a.area > b.area;
+            }
+        );
+    }
+
+    int keep = std::min(static_cast<int>(validHoles.size()), MAX_HOLES);
+    for (int i = 0; i < keep; ++i) {
+        processRing(validHoles[i].ring);
     }
 }

@@ -30,6 +30,8 @@ namespace Application {
         ImFont* fontBold;
         ImFont* fontRegular;
         
+        bool dragging;
+        
         std::unique_ptr<Camera> camera;
         std::unique_ptr<GeoJsonReader> geoJsonReader;
         std::unique_ptr<TextRenderer> textRenderer;
@@ -37,6 +39,7 @@ namespace Application {
 
         AppContext() {
             filepath = "";
+            dragging = false;
         }
 
     };

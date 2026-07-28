@@ -58,7 +58,10 @@ void MapRenderer::AddFeature(const GeoFeature& feature) {
     {
         uint32_t start = static_cast<uint32_t>(vertices.size());
         for (const auto& point : feature.vertices) {
-            vertices.push_back({glm::vec2(point.x, point.y)});
+            vertices.push_back({
+                glm::vec2(point.x, point.y),
+                static_cast<float>(feature.id)
+            });
             indices.push_back(start++);
         }
         break;
@@ -68,7 +71,10 @@ void MapRenderer::AddFeature(const GeoFeature& feature) {
     {
         uint32_t start = static_cast<uint32_t>(vertices.size());
         for (const auto& point : feature.vertices) {
-            vertices.push_back({glm::vec2(point.x, point.y)});
+            vertices.push_back({
+                glm::vec2(point.x, point.y),
+                static_cast<float>(feature.id)
+            });
         }
         for (uint32_t i = 0; i + 1 < feature.vertices.size(); i++) {
             indices.push_back(start + i);
@@ -85,10 +91,8 @@ void MapRenderer::AddFeature(const GeoFeature& feature) {
             uint32_t start = static_cast<uint32_t>(vertices.size());
             for (const auto& point : feature.vertices) {
                 vertices.push_back({
-                    glm::vec2(
-                        static_cast<float>(point.x),
-                        static_cast<float>(point.y)
-                    )
+                    glm::vec2(point.x, point.y),
+                    static_cast<float>(feature.id)
                 });
             }
             for (uint32_t i = 1; i + 1 < feature.vertices.size(); i++) {
@@ -108,37 +112,63 @@ void MapRenderer::AddFeature(const GeoFeature& feature) {
 
 void MapRenderer::TriangulateWithEarcut(const GeoFeature& feature) {
     std::vector<std::vector<std::array<double, 2>>> polygon;
-    for (size_t r = 0; r < feature.ringStarts.size(); r++) {
+    polygon.reserve(feature.ringStarts.size());
+
+    size_t totalVertices = 0;
+
+    for (size_t r = 0; r < feature.ringStarts.size(); ++r) {
         size_t start = feature.ringStarts[r];
         size_t end = (r + 1 < feature.ringStarts.size())
             ? feature.ringStarts[r + 1]
             : feature.vertices.size();
 
         std::vector<std::array<double, 2>> ring;
-        for (size_t i = start; i < end; i++) {
+        ring.reserve(end - start);
+
+        for (size_t i = start; i < end; ++i) {
             ring.push_back({
                 feature.vertices[i].x,
                 feature.vertices[i].y
             });
         }
-        polygon.push_back(std::move(ring));
-    }
 
-    uint32_t vertexStart = static_cast<uint32_t>(vertices.size());
-
-    // ADD ALL RINGS TO THE VERTEX BUFFER
-    for (const auto& ring : polygon) {
-        for (const auto& point : ring) {
-            vertices.push_back({
-                glm::vec2(
-                    static_cast<float>(point[0]),
-                    static_cast<float>(point[1])
-                )
-            });
+        if (ring.size() >= 3) {
+            totalVertices += ring.size();
+            polygon.push_back(std::move(ring));
         }
     }
 
+    if (polygon.empty())
+        return;
+
+    SDL_Log("POLYGON: %zu RINGS, %zu VERTICES", polygon.size(), totalVertices);
+
+    constexpr size_t MAX_RINGS = 200;
+    constexpr size_t MAX_VERTICES = 50000;
+
+    if (polygon.size() > MAX_RINGS || totalVertices > MAX_VERTICES) {
+        SDL_Log("SKIPPING EARCUT (%zu RINGS, %zu VERTICES)", polygon.size(), totalVertices);
+        return;
+    }
+    uint32_t vertexStart = static_cast<uint32_t>(vertices.size());
+
+    // Copy vertices directly from the feature (avoids iterating polygon again)
+    vertices.reserve(vertices.size() + feature.vertices.size());
+    for (const auto& p : feature.vertices) {
+        vertices.push_back({
+            glm::vec2(static_cast<float>(p.x), static_cast<float>(p.y)),
+            static_cast<float>(feature.id)
+        });
+    }
+
+    auto t0 = SDL_GetPerformanceCounter();
     auto triangles = mapbox::earcut<uint32_t>(polygon);
+    auto t1 = SDL_GetPerformanceCounter();
+
+    double ms = (t1 - t0) * 1000.0 / static_cast<double>(SDL_GetPerformanceFrequency());
+    SDL_Log("EARCUT: %.2f ms (%zu TRIANGLES)", ms, triangles.size() / 3);
+
+    indices.reserve(indices.size() + triangles.size());
     for (uint32_t index : triangles) {
         indices.push_back(vertexStart + index);
     }
@@ -149,7 +179,7 @@ void MapRenderer::UploadMesh() {
         return;
     }
     SDL_Log(
-        "Vertices: %zu Indices: %zu Triangles: %zu",
+        "VERTICES: %zu INDICES: %zu TRIANGLES: %zu",
         vertices.size(),
         indices.size(),
         indices.size() / 3
@@ -172,8 +202,32 @@ void MapRenderer::UploadMesh() {
     );
     glVertexArrayVertexBuffer(vao, 0, vbo, 0, sizeof(Vertex));
     glVertexArrayElementBuffer(vao, ebo);
+
+    // position
     glEnableVertexArrayAttrib(vao, 0);
-    glVertexArrayAttribFormat(vao, 0, 2, GL_FLOAT, GL_FALSE, 0);
+    glVertexArrayAttribFormat(
+        vao,
+        0,
+        2,
+        GL_FLOAT,
+        GL_FALSE,
+        offsetof(Vertex, position)
+    );
+    glVertexArrayAttribBinding(vao, 0, 0);
+
+
+    // polygon ID
+    glEnableVertexArrayAttrib(vao, 1);
+    glVertexArrayAttribFormat(
+        vao,
+        1,
+        1,
+        GL_FLOAT,
+        GL_FALSE,
+        offsetof(Vertex, polygonID)
+    );
+    glVertexArrayAttribBinding(vao, 1, 0);
+
     glVertexArrayAttribBinding(vao, 0, 0);
 }
 

@@ -18,8 +18,9 @@ class Camera {
 
         void Resize(int windowWidth, int windowHeight);
 
-        // void ProcessMouseMotion(float xrel, float yrel);
-        // void ProcessMouseWheel(float amount);
+        void ProcessMouseMotion(float xrel, float yrel);
+
+        void ProcessMouseWheel(float amount);
 
         void SetPosition(const glm::vec2& position);
 
@@ -39,8 +40,14 @@ class Camera {
 
         void UpdateProjectionFromBounds();
 
+        void ClampToBounds();
+
         int width = 1280;
         int height = 720;
+
+        float zoom = 1.0f;
+        float minZoom = 0.2f;
+        float maxZoom = 20.0f;
 
         bool hasBounds = false;
 

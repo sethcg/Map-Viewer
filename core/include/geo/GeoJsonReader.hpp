@@ -10,6 +10,8 @@
 struct GeoVertex {
     double x;
     double y;
+    
+    float id;
 };
 
 struct GeoBounds {
@@ -26,6 +28,7 @@ enum class GeometryType {
 };
 
 struct GeoFeature {
+    uint32_t id = 0;
     GeometryType type;
     std::vector<GeoVertex> vertices;
     std::vector<size_t> ringStarts;
@@ -45,12 +48,16 @@ class GeoJsonReader {
         }
 
     private:
+        uint32_t nextFeatureID = 0;
+
         GDALDataset* dataset = nullptr;
         OGRCoordinateTransformation* transform = nullptr;
 
         GeoBounds bounds;
 
-        GeoFeature processGeometry(OGRGeometry* geometry);
+        bool isVirginia(const OGREnvelope& env);
+
+        void processGeometry(OGRGeometry* geometry, std::vector<GeoFeature>& out);
 
         void transformPoint(double& x, double& y);
 

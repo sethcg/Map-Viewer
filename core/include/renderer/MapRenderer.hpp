@@ -37,7 +37,10 @@ class MapRenderer {
         void TriangulateWithEarcut(const GeoFeature& feature);
 
     private:
-        struct Vertex { glm::vec2 position; };
+        struct Vertex {
+            glm::vec2 position;
+            float polygonID;
+        };
 
         std::vector<Vertex> vertices;
         std::vector<uint32_t> indices;

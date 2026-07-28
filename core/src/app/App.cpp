@@ -90,6 +90,26 @@ namespace Application {
         switch (event->type) {
             case SDL_EVENT_QUIT:
                 return SDL_APP_SUCCESS;
+            case SDL_EVENT_MOUSE_WHEEL:
+                appContext.camera->ProcessMouseWheel(event->wheel.y);
+                break;
+            case SDL_EVENT_MOUSE_BUTTON_DOWN:
+                if (event->button.button == SDL_BUTTON_LEFT)
+                    appContext.dragging = true;
+                break;
+
+            case SDL_EVENT_MOUSE_BUTTON_UP:
+                if (event->button.button == SDL_BUTTON_LEFT)
+                    appContext.dragging = false;
+                break;
+
+            case SDL_EVENT_MOUSE_MOTION:
+                if (appContext.dragging)
+                    appContext.camera->ProcessMouseMotion(
+                        event->motion.xrel,
+                        event->motion.yrel
+                    );
+                break;
             case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
                 width = event->window.data1;
                 height = event->window.data2;
