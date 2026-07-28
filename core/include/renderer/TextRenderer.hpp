@@ -13,20 +13,23 @@
 #include <RendererHelper.hpp>
 
 class TextRenderer {
-public:
-    TextRenderer() = default;
-    ~TextRenderer() { Shutdown(); }
+    public:
+        TextRenderer() = default;
+        ~TextRenderer() { Shutdown(); }
 
-    void Init(TTF_Font* font);
+        void Init(TTF_Font* font);
 
-    void Shutdown();
+        void Shutdown();
 
-    void UpdateFPS();
+        void UpdateFPS();
 
-    void Render(int windowWidth, int windowHeight);
+        void Render(int windowWidth, int windowHeight);
 
     private:
         struct FrameRate {
+            static constexpr int TEXTURE_WIDTH = 256;
+            static constexpr int TEXTURE_HEIGHT = 64;
+
             GLuint texture = 0;
             int texWidth = 0;
             int texHeight = 0;
@@ -35,7 +38,6 @@ public:
             int frameCount = 0;
         };
 
-    private:
         TTF_Font* textFont = nullptr;
         FrameRate frameRate;
 
@@ -46,9 +48,9 @@ public:
 
         // SHADER UNIFORMS
         GLint uProjLocation = -1;
+        GLint uTexSizeLocation = -1;
 
     private:
-        // NON-COPYABLE (OWNS GPU RESOURCES)
         TextRenderer(const TextRenderer&) = delete;
         TextRenderer& operator=(const TextRenderer&) = delete;
 };

@@ -5,9 +5,14 @@
             "includePath": [
                 "${workspaceFolder}\\plugin\\**\\**",
                 "${workspaceFolder}\\build\\**",
-                "${workspaceFolder}\\core\\include\\**\\**"
+                "${workspaceFolder}\\core\\include\\**\\**",
+                "${workspaceFolder}\\core\\include\\**"
             ],
-            "defines": ["_DEBUG", "UNICODE", "_UNICODE"],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ],
             "cStandard": "c17",
             "cppStandard": "c++17",
             "intelliSenseMode": "msvc-x64",

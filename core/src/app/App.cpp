@@ -11,15 +11,17 @@
 
 #include <App.hpp>
 #include <AppContext.hpp>
+#include <Camera.hpp>
 #include <TextRenderer.hpp>
+#include <MapRenderer.hpp>
 #include <UserInterface.hpp>
 
 namespace Application {
 
     bool App::CreateSDLWindow(const char* title) {
-        // SET SDL GL ATTRIBUTES (OpenGL 4.3 CORE)
+        // SET SDL GL ATTRIBUTES (OpenGL 4.5 CORE)
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 5);
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
         
         SDL_SetLogPriority(SDL_LOG_CATEGORY_APPLICATION, SDL_LOG_PRIORITY_DEBUG);
@@ -44,6 +46,30 @@ namespace Application {
         appContext.textRenderer = std::make_unique<TextRenderer>();
         appContext.textRenderer->Init(textFont);
 
+        appContext.camera = std::make_unique<Camera>(WINDOW_WIDTH, WINDOW_HEIGHT);
+
+        appContext.geoJsonReader = std::make_unique<GeoJsonReader>();
+        appContext.geoJsonReader->open("../data/raster_test.geojson");
+
+        appContext.mapRenderer = std::make_unique<MapRenderer>();
+        appContext.mapRenderer->Init();
+        if (!appContext.mapRenderer->LoadGeoJson(*appContext.geoJsonReader)) {
+            return SDL_APP_FAILURE;
+        }
+        GeoBounds bounds = appContext.geoJsonReader->GetBounds();
+        appContext.camera->FitBounds(
+            bounds.minX,
+            bounds.minY,
+            bounds.maxX,
+            bounds.maxY
+        );
+        SDL_Log("Bounds: %lf, %lf -> %lf, %lf",
+            bounds.minX,
+            bounds.minY,
+            bounds.maxX,
+            bounds.maxY
+        );
+        
         // INITIALIZE IMGUI
         IMGUI_CHECKVERSION();
         ImGui::CreateContext(); 
@@ -82,6 +108,8 @@ namespace Application {
 
         appContext.textRenderer->UpdateFPS();
         appContext.textRenderer->Render(width, height);
+
+        appContext.mapRenderer->Render(appContext.camera->GetViewProjection());
     }
 
     SDL_AppResult App::Frame() {

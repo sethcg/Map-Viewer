@@ -3,36 +3,53 @@
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 class Camera {
     public:
-        Camera(int windowWidth, int windowHeight) { Resize(windowWidth, windowHeight); }
+        Camera(int windowWidth, int windowHeight){
+            Resize(windowWidth, windowHeight);
+        }
         virtual ~Camera() = default;
 
-        virtual void Update(float deltaTime) = 0;
-        virtual void ProcessKeyboard(float deltaTime) {}
-        virtual void ProcessMouseMotion(float xrel, float yrel) {}
+        void Update(float deltaTime);
 
-        virtual void UpdateBounds(glm::vec3 center, float radius) {
-            sceneCenter = center;
-            sceneRadius = radius;
+        void FitBounds(double minX, double minY, double maxX, double maxY);
+
+        void Resize(int windowWidth, int windowHeight);
+
+        // void ProcessMouseMotion(float xrel, float yrel);
+        // void ProcessMouseWheel(float amount);
+
+        void SetPosition(const glm::vec2& position);
+
+        glm::vec2 GetPosition() const {
+            return position;
         }
 
-        virtual void Resize(int windowWidth, int windowHeight) {
-            projection = glm::perspective(
-                glm::radians(45.0f),
-                float(windowWidth) / float(windowHeight),
-                0.1f,           // NEAR
-                100000.0f       // FAR
-            );
+        glm::mat4 GetViewProjection() const {
+            return projection * view;
         }
 
-        glm::mat4 GetViewProjection() const { return projection * view; }
 
-    protected:
-        glm::mat4 view;
-        glm::mat4 projection;
+    private:
+        void UpdateView();
 
-        glm::vec3 sceneCenter = glm::vec3(0.0f);
-        float sceneRadius = 5.0f;
+        void UpdateProjection();
+
+        void UpdateProjectionFromBounds();
+
+        int width = 1280;
+        int height = 720;
+
+        bool hasBounds = false;
+
+        double boundsMinX = 0;
+        double boundsMinY = 0;
+        double boundsMaxX = 0;
+        double boundsMaxY = 0;
+
+        glm::mat4 view{1.0f};
+        glm::mat4 projection{1.0f};
+        glm::vec2 position{ 0.0f, 0.0f };
 };

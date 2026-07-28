@@ -20,8 +20,7 @@ TARGET_LINK_LIBRARIES(core PUBLIC
     glm::glm
     OpenGL::GL
     glad::glad
-    PROJ::proj
-    SQLite3::SQLite3
-    nlohmann_json::nlohmann_json
+    GDAL::GDAL
+    GEOS::geos
     imgui
 )

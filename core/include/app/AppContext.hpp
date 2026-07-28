@@ -8,7 +8,10 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include <Camera.hpp>
+#include <GeoJsonReader.hpp>
 #include <TextRenderer.hpp>
+#include <MapRenderer.hpp>
 
 #define WINDOW_WIDTH 1280
 #define WINDOW_HEIGHT 720
@@ -17,7 +20,7 @@
 #define MINIMUM_WINDOW_WIDTH 640
 #define MINIMUM_WINDOW_HEIGHT 360
 
-#define GLSL_VERSION "#version 330"
+#define GLSL_VERSION "#version 450"
 
 namespace Application {
 
@@ -27,7 +30,10 @@ namespace Application {
         ImFont* fontBold;
         ImFont* fontRegular;
         
+        std::unique_ptr<Camera> camera;
+        std::unique_ptr<GeoJsonReader> geoJsonReader;
         std::unique_ptr<TextRenderer> textRenderer;
+        std::unique_ptr<MapRenderer> mapRenderer;
 
         AppContext() {
             filepath = "";

@@ -20,6 +20,7 @@ void TextRenderer::Init(TTF_Font* font) {
 
     glUseProgram(textShader);
     uProjLocation = glGetUniformLocation(textShader, "uProj");
+    uTexSizeLocation = glGetUniformLocation(textShader, "uTexSize");
     glUniform1i(glGetUniformLocation(textShader, "uTex"), 0);
     glUseProgram(0);
 
@@ -45,14 +46,18 @@ void TextRenderer::Init(TTF_Font* font) {
     glBindVertexArray(0);
 
     // TEXTURE
-    glGenTextures(1, &frameRate.texture);
-    glBindTexture(GL_TEXTURE_2D, frameRate.texture);
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glCreateTextures(GL_TEXTURE_2D, 1, &frameRate.texture);
+    glTextureStorage2D(frameRate.texture, 1, GL_RGBA8, FrameRate::TEXTURE_WIDTH, FrameRate::TEXTURE_HEIGHT);
+    
+    glTextureParameteri(frameRate.texture, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTextureParameteri(frameRate.texture, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTextureParameteri(frameRate.texture, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTextureParameteri(frameRate.texture, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    const unsigned char clearColor[4] = {0, 0, 0, 0};
+    glClearTexImage(frameRate.texture, 0, GL_RGBA, GL_UNSIGNED_BYTE, clearColor);
+
+    frameRate.lastTime = SDL_GetTicks();
 }
 
 void TextRenderer::UpdateFPS() {
@@ -78,8 +83,18 @@ void TextRenderer::UpdateFPS() {
     frameRate.texWidth = convertedSurface->w;
     frameRate.texHeight = convertedSurface->h;
 
-    glBindTexture(GL_TEXTURE_2D, frameRate.texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, convertedSurface->w, convertedSurface->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, convertedSurface->pixels);
+    const unsigned char clearColor[4] = {0, 0, 0, 0};
+    glClearTexImage(frameRate.texture, 0, GL_RGBA, GL_UNSIGNED_BYTE, clearColor);
+
+    glTextureSubImage2D(
+        frameRate.texture,
+        0, 0, 0,
+        convertedSurface->w,
+        convertedSurface->h,
+        GL_RGBA,
+        GL_UNSIGNED_BYTE,
+        convertedSurface->pixels
+    );
 
     SDL_DestroySurface(convertedSurface);
 }
@@ -88,6 +103,12 @@ void TextRenderer::Render(int windowWidth, int windowHeight) {
     if (frameRate.texWidth == 0 || frameRate.texHeight == 0) return;
 
     glUseProgram(textShader);
+
+    glUniform2f(uTexSizeLocation,
+        (float)frameRate.texWidth / FrameRate::TEXTURE_WIDTH,
+        (float)frameRate.texHeight / FrameRate::TEXTURE_HEIGHT
+    );
+
     glBindVertexArray(vao);
 
     glActiveTexture(GL_TEXTURE0);
