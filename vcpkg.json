@@ -3,6 +3,7 @@
   "dependencies": [
     "sdl3",
     "sdl3-ttf",
+    "stb",
     "glad",
     "glm",
     {
@@ -12,6 +13,7 @@
         "geos"
       ]
     },
-    "earcut-hpp"
+    "earcut-hpp",
+    "sqlite3"
   ]
 }

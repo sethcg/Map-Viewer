@@ -11,7 +11,8 @@
 #include <Camera.hpp>
 #include <GeoJsonReader.hpp>
 #include <TextRenderer.hpp>
-#include <MapRenderer.hpp>
+#include <TileRenderer.hpp>
+#include <PolygonRenderer.hpp>
 
 #define WINDOW_WIDTH 1280
 #define WINDOW_HEIGHT 720
@@ -31,11 +32,12 @@ namespace Application {
         ImFont* fontRegular;
         
         bool dragging;
-        
+
         std::unique_ptr<Camera> camera;
         std::unique_ptr<GeoJsonReader> geoJsonReader;
         std::unique_ptr<TextRenderer> textRenderer;
-        std::unique_ptr<MapRenderer> mapRenderer;
+        std::unique_ptr<TileRenderer> tileRenderer;
+        std::unique_ptr<PolygonRenderer> polygonRenderer;
 
         AppContext() {
             filepath = "";

@@ -22,5 +22,9 @@ TARGET_LINK_LIBRARIES(core PUBLIC
     glad::glad
     GDAL::GDAL
     GEOS::geos
+    SQLite3::SQLite3
     imgui
 )
+
+FIND_PATH(STB_INCLUDE_DIR stb_image.h)
+TARGET_INCLUDE_DIRECTORIES(core PRIVATE ${STB_INCLUDE_DIR})

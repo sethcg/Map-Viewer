@@ -5,6 +5,7 @@
             "includePath": [
                 "${workspaceFolder}\\plugin\\**\\**",
                 "${workspaceFolder}\\build\\**",
+                "${workspaceFolder}\\core\\include\\**\\**\\**",
                 "${workspaceFolder}\\core\\include\\**\\**",
                 "${workspaceFolder}\\core\\include\\**"
             ],

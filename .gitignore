@@ -1,8 +1,8 @@
 # BUILD FOLDER
 /build
 
-#DATA FOLDER
-/data
+# TILE MAPS TOO LARGE
+data/tiles/
 
 # LINE COUNT FILE
 line-count.txt

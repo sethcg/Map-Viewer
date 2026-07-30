@@ -13,7 +13,7 @@
 #include <AppContext.hpp>
 #include <Camera.hpp>
 #include <TextRenderer.hpp>
-#include <MapRenderer.hpp>
+#include <PolygonRenderer.hpp>
 #include <UserInterface.hpp>
 
 namespace Application {
@@ -46,29 +46,27 @@ namespace Application {
         appContext.textRenderer = std::make_unique<TextRenderer>();
         appContext.textRenderer->Init(textFont);
 
+        appContext.tileRenderer = std::make_unique<TileRenderer>();
+        appContext.tileRenderer->Init();
+        appContext.tileRenderer->LoadTiles("../data/tiles/quantico_zoom_17.sqlite");
+
         appContext.camera = std::make_unique<Camera>(WINDOW_WIDTH, WINDOW_HEIGHT);
 
-        appContext.geoJsonReader = std::make_unique<GeoJsonReader>();
-        appContext.geoJsonReader->open("../data/raster_test.geojson");
+        // INITIALIZE CAMERA TO THE TILE DATA
+        TileCenter startPosition = appContext.tileRenderer->GetCenter();
+        appContext.camera->SetPosition(glm::vec2(
+            static_cast<float>(startPosition.x), 
+            static_cast<float>(startPosition.y)
+        ));
 
-        appContext.mapRenderer = std::make_unique<MapRenderer>();
-        appContext.mapRenderer->Init();
-        if (!appContext.mapRenderer->LoadGeoJson(*appContext.geoJsonReader)) {
+        appContext.geoJsonReader = std::make_unique<GeoJsonReader>();
+        appContext.geoJsonReader->open("../data/footprint.geojson");
+
+        appContext.polygonRenderer = std::make_unique<PolygonRenderer>();
+        appContext.polygonRenderer->Init();
+        if (!appContext.polygonRenderer->LoadGeoJson(*appContext.geoJsonReader)) {
             return SDL_APP_FAILURE;
         }
-        GeoBounds bounds = appContext.geoJsonReader->GetBounds();
-        appContext.camera->FitBounds(
-            bounds.minX,
-            bounds.minY,
-            bounds.maxX,
-            bounds.maxY
-        );
-        SDL_Log("Bounds: %lf, %lf -> %lf, %lf",
-            bounds.minX,
-            bounds.minY,
-            bounds.maxX,
-            bounds.maxY
-        );
         
         // INITIALIZE IMGUI
         IMGUI_CHECKVERSION();
@@ -126,10 +124,18 @@ namespace Application {
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        glm::mat4 viewProjection = appContext.camera->GetViewProjection();
+        
+        // DISABLED UNTIL FIXED, CURRENTLY THE ENTIRE THING IS OPAQUE BLOCKING THE MAP VIEW
+        // appContext.polygonRenderer->Render(viewProjection);
+
+        appContext.tileRenderer->Render(
+            viewProjection, 
+            appContext.camera->GetVisibleBounds()
+        );
+
         appContext.textRenderer->UpdateFPS();
         appContext.textRenderer->Render(width, height);
-
-        appContext.mapRenderer->Render(appContext.camera->GetViewProjection());
     }
 
     SDL_AppResult App::Frame() {
