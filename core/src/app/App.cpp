@@ -133,6 +133,7 @@ namespace Application {
             viewProjection, 
             appContext.camera->GetVisibleBounds()
         );
+        appContext.camera->SetBounds(appContext.tileRenderer->GetWorldBounds());
 
         appContext.textRenderer->UpdateFPS();
         appContext.textRenderer->Render(width, height);

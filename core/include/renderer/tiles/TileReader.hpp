@@ -11,6 +11,13 @@ struct MapCenter {
     double lat = 0.0;
 };
 
+struct MapBounds {
+    double west;
+    double south;
+    double east;
+    double north;
+};
+
 class TileReader {
     public:
         TileReader() = default;
@@ -21,6 +28,8 @@ class TileReader {
         bool GetTile(int z, int x, int y, std::vector<uint8_t>& data);
 
         MapCenter GetCenter() const;
+
+        MapBounds GetBounds() const;
 
     private:
         void Shutdown();

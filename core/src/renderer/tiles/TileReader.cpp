@@ -94,6 +94,42 @@ MapCenter TileReader::GetCenter() const {
     return center;
 }
 
+MapBounds TileReader::GetBounds() const {
+    MapBounds bounds{};
+
+    sqlite3_stmt* stmt = nullptr;
+    const char* sql =
+        "SELECT name, value "
+        "FROM metadata "
+        "WHERE name='west' "
+        "   OR name='south' "
+        "   OR name='east' "
+        "   OR name='north';";
+
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+        return bounds;
+    }
+
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        const char* name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
+        const char* value = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+
+        double d = atof(value);
+
+        if (strcmp(name, "west") == 0)
+            bounds.west = d;
+        else if (strcmp(name, "south") == 0)
+            bounds.south = d;
+        else if (strcmp(name, "east") == 0)
+            bounds.east = d;
+        else if (strcmp(name, "north") == 0)
+            bounds.north = d;
+    }
+
+    sqlite3_finalize(stmt);
+    return bounds;
+}
+
 void TileReader::Shutdown() {
     if (db) sqlite3_close(db);
 }

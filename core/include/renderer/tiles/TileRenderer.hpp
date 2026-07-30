@@ -45,6 +45,8 @@ class TileRenderer {
 
         TileCenter GetCenter();
 
+        WorldBounds GetWorldBounds();
+
     private:
         GLuint LoadTexture(int z, int x, int y);
 

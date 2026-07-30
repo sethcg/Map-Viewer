@@ -36,7 +36,6 @@ namespace {
         return lon * ORIGIN_SHIFT / 180.0;
     }
 
-
     double LatToWorldY(double lat) {
         double latRad = lat * M_PI / 180.0;
         return ORIGIN_SHIFT * std::log(std::tan(M_PI / 4.0 + latRad / 2.0)) / M_PI;
@@ -226,6 +225,17 @@ TileCenter TileRenderer::GetCenter() {
     center.y = LatToWorldY(mapCenter.lat);
 
     return center;
+}
+
+WorldBounds TileRenderer::GetWorldBounds() {
+    MapBounds map = reader.GetBounds();
+    
+    return {
+        LonToWorldX(map.west),
+        LatToWorldY(map.south),
+        LonToWorldX(map.east),
+        LatToWorldY(map.north)
+    };
 }
 
 void TileRenderer::DrawTile(int x, int y, GLuint texture, const glm::mat4& vp) {

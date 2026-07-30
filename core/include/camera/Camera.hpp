@@ -10,6 +10,12 @@ struct ViewBounds {
     double maxY;
 };
 
+struct WorldBounds {
+    double minX;
+    double minY;
+    double maxX;
+    double maxY;
+};
 
 class Camera {
     public:
@@ -33,11 +39,15 @@ class Camera {
 
         void SetZoom(float value);
 
-        float Camera::GetZoom() const { return zoom; }
+        void ClampToBounds();
 
-        glm::vec2 Camera::GetPosition() const { return position; }
+        void SetBounds(const WorldBounds& bounds);
 
-        glm::mat4 Camera::GetViewProjection() const { return projection * view; }
+        float GetZoom() const { return zoom; }
+
+        glm::vec2 GetPosition() const { return position; }
+
+        glm::mat4 GetViewProjection() const { return projection * view; }
 
     private:
         void UpdateView();
@@ -52,6 +62,10 @@ class Camera {
 
         float minZoom = 0.2f;
         float maxZoom = 20.0f;
+
+        bool hasBounds = false;
+
+        WorldBounds worldBounds{};
 
         glm::mat4 view{1.0f};
         glm::mat4 projection{1.0f};

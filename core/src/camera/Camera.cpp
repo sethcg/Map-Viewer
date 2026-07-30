@@ -36,6 +36,7 @@ void Camera::Resize(int w, int h) {
     height = h;
 
     UpdateProjection();
+    ClampToBounds();
 }
 
 void Camera::ProcessMouseMotion(float xrel, float yrel) {
@@ -46,6 +47,7 @@ void Camera::ProcessMouseMotion(float xrel, float yrel) {
     position.y += yrel * worldHeight / height;
 
     UpdateView();
+    ClampToBounds();
 }
 
 void Camera::ProcessMouseWheel(float wheel) {
@@ -56,6 +58,7 @@ void Camera::ProcessMouseWheel(float wheel) {
 
     zoom = glm::clamp(zoom, 0.1f, 100.0f);
     UpdateProjection();
+    ClampToBounds();
 }
 
 void Camera::SetPosition(const glm::vec2& pos) {
@@ -66,6 +69,38 @@ void Camera::SetPosition(const glm::vec2& pos) {
 void Camera::SetZoom(float value) {
     zoom = glm::clamp(value, 0.1f, 100.0f);
     UpdateProjection();
+}
+
+void Camera::ClampToBounds() {
+    if (!hasBounds) return;
+
+    float halfWidth  = width * 0.5f / zoom;
+    float halfHeight = height * 0.5f / zoom;
+
+    float minX = worldBounds.minX + halfWidth;
+    float maxX = worldBounds.maxX - halfWidth;
+
+    float minY = worldBounds.minY + halfHeight;
+    float maxY = worldBounds.maxY - halfHeight;
+
+    if (minX <= maxX)
+        position.x = std::clamp(position.x, minX, maxX);
+    else
+        position.x = (worldBounds.minX + worldBounds.maxX) * 0.5f;
+
+    if (minY <= maxY)
+        position.y = std::clamp(position.y, minY, maxY);
+    else
+        position.y = (worldBounds.minY + worldBounds.maxY) * 0.5f;
+
+    UpdateView();
+}
+
+void Camera::SetBounds(const WorldBounds& bounds) {
+    hasBounds = true;
+    worldBounds = bounds;
+
+    ClampToBounds();
 }
 
 ViewBounds Camera::GetVisibleBounds() const {
