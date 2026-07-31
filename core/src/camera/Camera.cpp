@@ -56,7 +56,8 @@ void Camera::ProcessMouseWheel(float wheel) {
     else if (wheel < 0)
         zoom /= 1.15f;
 
-    zoom = glm::clamp(zoom, 0.1f, 100.0f);
+    zoom = glm::clamp(zoom, minZoom, maxZoom);
+
     UpdateProjection();
     ClampToBounds();
 }
@@ -66,9 +67,16 @@ void Camera::SetPosition(const glm::vec2& pos) {
     UpdateView();
 }
 
-void Camera::SetZoom(float value) {
-    zoom = glm::clamp(value, 0.1f, 100.0f);
-    UpdateProjection();
+void Camera::SetTileZoom(int zoomLevel, double worldSize) {
+    double tileWorldSize = worldSize / (1 << zoomLevel);
+    
+    double tilesX = sqrt(MAX_VISIBLE_TILES * width / double(height));
+    double tilesY = MAX_VISIBLE_TILES / tilesX;
+
+    minZoom = std::max(
+        width / (tilesX * tileWorldSize),
+        height / (tilesY * tileWorldSize)
+    );
 }
 
 void Camera::ClampToBounds() {

@@ -3,6 +3,10 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+// BOUND FOR THE MIN ZOOM ALLOWED,
+// PERFORMANCE CONCERN IF LOADING TOO MANY TILES
+constexpr double MAX_VISIBLE_TILES = 200.0;
+
 struct ViewBounds {
     double minX;
     double minY;
@@ -37,7 +41,7 @@ class Camera {
 
         void SetPosition(const glm::vec2& position);
 
-        void SetZoom(float value);
+        void SetTileZoom(int zoomLevel, double worldSize);
 
         void ClampToBounds();
 
@@ -61,7 +65,7 @@ class Camera {
         float zoom = 1.0f;
 
         float minZoom = 0.2f;
-        float maxZoom = 20.0f;
+        float maxZoom = 10.0f;
 
         bool hasBounds = false;
 

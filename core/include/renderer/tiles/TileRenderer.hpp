@@ -10,6 +10,9 @@
 #include <Camera.hpp>
 #include <TileReader.hpp>
 
+constexpr double ORIGIN_SHIFT = 20037508.342789244;
+constexpr double WORLD_SIZE   = ORIGIN_SHIFT * 2.0;
+
 struct TileKey {
     int x, y, z;
     
@@ -25,6 +28,11 @@ struct TileKeyHash {
             (static_cast<size_t>(key.y) << 20) ^ 
             (static_cast<size_t>(key.z));
     }
+};
+
+struct CachedTexture {
+    GLuint texture = 0;
+    uint64_t lastUsed = 0;
 };
 
 struct TileCenter {
@@ -45,6 +53,10 @@ class TileRenderer {
 
         TileCenter GetCenter();
 
+        int GetZoomLevel() const { return zoomLevel; };
+
+        double GetWorldSize() const { return WORLD_SIZE; };
+
         WorldBounds GetWorldBounds();
 
     private:
@@ -63,5 +75,5 @@ class TileRenderer {
 
         int zoomLevel = 17;
 
-        std::unordered_map<TileKey, GLuint, TileKeyHash> textureCache;
+        std::unordered_map<TileKey, CachedTexture, TileKeyHash> textureCache;
 };

@@ -18,10 +18,9 @@
 #include <RendererHelper.hpp>
 #include <TileRenderer.hpp>
 
-namespace {
-    constexpr double ORIGIN_SHIFT = 20037508.342789244;
-    constexpr double WORLD_SIZE   = ORIGIN_SHIFT * 2.0;
+int currentTileCount = 0;
 
+namespace {
     int WorldToTileX(double x, int z) {
         double u = (x + ORIGIN_SHIFT) / WORLD_SIZE;
         return (int)std::floor(u * (1 << z));
@@ -108,8 +107,10 @@ GLuint TileRenderer::LoadTexture(int z, int x, int y) {
     TileKey key{x, y, z};
 
     auto found = textureCache.find(key);
-    if (found != textureCache.end())
-        return found->second;
+    if (found != textureCache.end()) {
+        found->second.lastUsed = SDL_GetPerformanceCounter();
+        return found->second.texture;
+    }
 
     std::vector<uint8_t> data;
     if (!reader.GetTile(z, x, y, data)) {
@@ -133,13 +134,14 @@ GLuint TileRenderer::LoadTexture(int z, int x, int y) {
             STBI_rgb_alpha
         );
 
-        SDL_Log("LOADED TILE %dx%d CHANNELS=%d FIRST PIXEL RGBA: %d %d %d %d",
-            width, height, channels,
-            pixels[0],
-            pixels[1],
-            pixels[2],
-            pixels[3]
-        );
+        SDL_Log("TILES LOADED: %d", currentTileCount++);
+        // SDL_Log("LOADED TILE %dx%d CHANNELS=%d FIRST PIXEL RGBA: %d %d %d %d",
+        //     width, height, channels,
+        //     pixels[0],
+        //     pixels[1],
+        //     pixels[2],
+        //     pixels[3]
+        // );
 
     if (!pixels) {
         SDL_Log("STB_IMAGE FAILED: %s", stbi_failure_reason());
@@ -194,7 +196,12 @@ GLuint TileRenderer::LoadTexture(int z, int x, int y) {
         glDeleteTextures(1, &texture);
         return 0;
     }
-    textureCache.emplace(key, texture);
+    textureCache.emplace(
+        key, CachedTexture{ 
+            texture,
+            SDL_GetPerformanceCounter()
+        }
+    );
 
     return texture;
 }
@@ -242,9 +249,8 @@ void TileRenderer::DrawTile(int x, int y, GLuint texture, const glm::mat4& vp) {
     const double tiles = static_cast<double>(1 << zoomLevel);
     const double tileSize = WORLD_SIZE / tiles;
 
-    const double minX = -ORIGIN_SHIFT + (static_cast<double>(x) / tiles) * WORLD_SIZE;
-    const double maxY = ORIGIN_SHIFT - (static_cast<double>(y) / tiles) * WORLD_SIZE;
-
+    const double minX = -ORIGIN_SHIFT + x * tileSize;
+    const double maxY = ORIGIN_SHIFT - y * tileSize;
 
     glm::mat4 model(1.0f);
 
@@ -252,7 +258,12 @@ void TileRenderer::DrawTile(int x, int y, GLuint texture, const glm::mat4& vp) {
     model = glm::translate(model, glm::vec3(minX + tileSize * 0.5, maxY - tileSize * 0.5, 0.0f));
 
     // Quad is -1..1, so scale by half tile size
-    model = glm::scale(model, glm::vec3(tileSize * 0.5, tileSize * 0.5, 1.0f));
+    constexpr double overlap = 1.001;
+    model = glm::scale(model, glm::vec3(
+        tileSize * 0.5 * overlap, 
+        tileSize * 0.5 * overlap, 
+        1.0f
+    ));
 
     glUseProgram(tileProgram);
 
@@ -283,8 +294,10 @@ void TileRenderer::DrawTile(int x, int y, GLuint texture, const glm::mat4& vp) {
 
 void TileRenderer::Shutdown() {
     for (auto& [key, texture] : textureCache) {
-        if (texture) glDeleteTextures(1, &texture);
+        if (texture.texture) glDeleteTextures(1, &texture.texture);
     }
+
+textureCache.clear();
     textureCache.clear();
 
     if (vbo) glDeleteBuffers(1, &vbo);

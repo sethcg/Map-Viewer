@@ -51,6 +51,10 @@ namespace Application {
         appContext.tileRenderer->LoadTiles("../data/tiles/quantico_zoom_17.sqlite");
 
         appContext.camera = std::make_unique<Camera>(WINDOW_WIDTH, WINDOW_HEIGHT);
+        appContext.camera->SetTileZoom(
+            appContext.tileRenderer->GetZoomLevel(),
+            appContext.tileRenderer->GetWorldSize()
+        );
 
         // INITIALIZE CAMERA TO THE TILE DATA
         TileCenter startPosition = appContext.tileRenderer->GetCenter();
