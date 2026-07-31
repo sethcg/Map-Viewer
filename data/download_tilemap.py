@@ -1,3 +1,4 @@
+from pathlib import Path
 import sqlite3
 import requests
 import mercantile
@@ -11,19 +12,23 @@ north = 38.68175775
 
 zoom = 17
 
-output = "tiles/quantico_zoom_17.sqlite"
+output = "./data/tiles/quantico_street_map_zoom_17.sqlite"
+output_path = Path(output)
+output_path.parent.mkdir(parents=True, exist_ok=True)
 
 url_template = (
     "https://services.arcgisonline.com/ArcGIS/rest/services/"
     "World_Imagery/MapServer/tile/{z}/{y}/{x}"
+    # "World_Street_Map/MapServer/tile/{z}/{y}/{x}"
 )
 
 source_url = (
     "https://services.arcgisonline.com/ArcGIS/rest/services/"
     "World_Imagery/MapServer"
+    # "World_Street_Map/MapServer"
 )
 
-db = sqlite3.connect(output)
+db = sqlite3.connect(output_path)
 cur = db.cursor()
 
 cur.execute("""

@@ -24,6 +24,14 @@
             "environment": [],
             "console": "newExternalWindow",
             "preLaunchTask": "Build Release"
+        },
+        {
+            "name": "Download Tilemap",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/data/download_tilemap.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}"
         }
     ]
 }
