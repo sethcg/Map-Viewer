@@ -48,8 +48,7 @@ namespace Application {
 
         appContext.tileRenderer = std::make_unique<TileRenderer>();
         appContext.tileRenderer->Init();
-        appContext.tileRenderer->LoadTiles("../data/tiles/quantico_satellite_map_zoom_17.sqlite");
-        // appContext.tileRenderer->LoadTiles("../data/tiles/quantico_street_map_zoom_17.sqlite");
+        appContext.tileRenderer->LoadTiles("../data/tiles/quantico_hybrid_map.sqlite");
 
         appContext.camera = std::make_unique<Camera>(WINDOW_WIDTH, WINDOW_HEIGHT);
         appContext.camera->SetTileZoom(

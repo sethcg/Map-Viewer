@@ -8,3 +8,6 @@ data/tiles/
 line-count.txt
 
 *.ini
+
+# ENVIRONMENT VARIABLES
+.env

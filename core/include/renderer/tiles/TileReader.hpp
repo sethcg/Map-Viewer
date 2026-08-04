@@ -18,6 +18,12 @@ struct MapBounds {
     double north;
 };
 
+struct ZoomInfo {
+    int minZoom = 0;
+    int maxZoom = 0;
+    int centerZoom = 0;
+};
+
 class TileReader {
     public:
         TileReader() = default;
@@ -25,15 +31,26 @@ class TileReader {
 
         bool Open(const std::string& filename);
 
+        bool LoadMetadata();
+
         bool GetTile(int z, int x, int y, std::vector<uint8_t>& data);
 
-        MapCenter GetCenter() const;
+        MapCenter GetCenter() const { return center; }
 
-        MapBounds GetBounds() const;
+        MapBounds GetBounds() const { return bounds; }
+
+        ZoomInfo GetZoomInfo() const { return zoomInfo; }
 
     private:
         void Shutdown();
 
     private:
         sqlite3* db = nullptr;
+
+        sqlite3_stmt* tileStmt = nullptr;
+
+        // METADATA
+        MapCenter center{};
+        MapBounds bounds{};
+        ZoomInfo zoomInfo{};
 };

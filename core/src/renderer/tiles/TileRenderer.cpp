@@ -22,13 +22,15 @@ int currentTileCount = 0;
 
 namespace {
     int WorldToTileX(double x, int z) {
-        double u = (x + ORIGIN_SHIFT) / WORLD_SIZE;
-        return (int)std::floor(u * (1 << z));
+        const double tilesPerAxis = std::ldexp(1.0, z);
+        const double u = (x + ORIGIN_SHIFT) / WORLD_SIZE;
+        return static_cast<int>(std::floor(u * tilesPerAxis));
     }
 
     int WorldToTileY(double y, int z) {
-        double v = (ORIGIN_SHIFT - y) / WORLD_SIZE;
-        return (int)std::floor(v * (1 << z));
+        const double tilesPerAxis = std::ldexp(1.0, z);
+        const double v = (ORIGIN_SHIFT - y) / WORLD_SIZE;
+        return static_cast<int>(std::floor(v * tilesPerAxis));
     }
 
     double LonToWorldX(double lon) {
@@ -36,7 +38,7 @@ namespace {
     }
 
     double LatToWorldY(double lat) {
-        double latRad = lat * M_PI / 180.0;
+        const double latRad = glm::radians(lat);
         return ORIGIN_SHIFT * std::log(std::tan(M_PI / 4.0 + latRad / 2.0)) / M_PI;
     }
 }
@@ -106,6 +108,8 @@ bool TileRenderer::LoadTiles(const std::string& filename) {
 GLuint TileRenderer::LoadTexture(int z, int x, int y) {
     TileKey key{x, y, z};
 
+    zoomLevel = reader.GetZoomInfo().centerZoom;
+
     auto found = textureCache.find(key);
     if (found != textureCache.end()) {
         found->second.lastUsed = SDL_GetPerformanceCounter();
@@ -116,7 +120,7 @@ GLuint TileRenderer::LoadTexture(int z, int x, int y) {
     if (!reader.GetTile(z, x, y, data)) {
         // EXPECTED WHEN THE CAMERA IS OUTSIDE THE MAP BOUNDS
         // TODO: FIX BY CLAMPING THE CAMERA TO THE TILEMAP BOUNDS SET IN THE METADATA
-        SDL_Log("MISSING TILE: %d/%d/%d", z, x, y);
+        // SDL_Log("MISSING TILE: %d/%d/%d", z, x, y);
         return 0;
     }
 
@@ -135,13 +139,13 @@ GLuint TileRenderer::LoadTexture(int z, int x, int y) {
         );
 
         SDL_Log("TILES LOADED: %d", currentTileCount++);
-        // SDL_Log("LOADED TILE %dx%d CHANNELS=%d FIRST PIXEL RGBA: %d %d %d %d",
-        //     width, height, channels,
-        //     pixels[0],
-        //     pixels[1],
-        //     pixels[2],
-        //     pixels[3]
-        // );
+        SDL_Log("LOADED TILE %dx%d CHANNELS=%d FIRST PIXEL RGBA: %d %d %d %d",
+            width, height, channels,
+            pixels[0],
+            pixels[1],
+            pixels[2],
+            pixels[3]
+        );
 
     if (!pixels) {
         SDL_Log("STB_IMAGE FAILED: %s", stbi_failure_reason());
@@ -246,8 +250,7 @@ WorldBounds TileRenderer::GetWorldBounds() {
 }
 
 void TileRenderer::DrawTile(int x, int y, GLuint texture, const glm::mat4& vp) {
-    const double tiles = static_cast<double>(1 << zoomLevel);
-    const double tileSize = WORLD_SIZE / tiles;
+    const double tileSize = WORLD_SIZE / (1 << zoomLevel);
 
     const double minX = -ORIGIN_SHIFT + x * tileSize;
     const double maxY = ORIGIN_SHIFT - y * tileSize;
