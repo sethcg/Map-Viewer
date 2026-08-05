@@ -53,6 +53,8 @@ class TileRenderer {
 
         TileCenter GetCenter();
 
+        void PurgeUnusedTextures(uint64_t maxAgeTicks);
+
         int GetZoomLevel() const { return zoomLevel; };
 
         double GetWorldSize() const { return WORLD_SIZE; };

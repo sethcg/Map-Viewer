@@ -18,6 +18,7 @@
 #include <RendererHelper.hpp>
 #include <TileRenderer.hpp>
 
+// DEBUG TOOL TO GET TILE TEXTURES CACHED
 int currentTileCount = 0;
 
 namespace {
@@ -225,6 +226,8 @@ void TileRenderer::Render(const glm::mat4& viewProjection, const ViewBounds& cam
             DrawTile(x, y, texture, viewProjection);
         }
     }
+
+    PurgeUnusedTextures(SDL_GetPerformanceFrequency() * 10);
 }
 
 TileCenter TileRenderer::GetCenter() {
@@ -236,6 +239,19 @@ TileCenter TileRenderer::GetCenter() {
     center.y = LatToWorldY(mapCenter.lat);
 
     return center;
+}
+
+void TileRenderer::PurgeUnusedTextures(uint64_t maxAgeTicks) {
+    const uint64_t now = SDL_GetPerformanceCounter();
+    for (auto it = textureCache.begin(); it != textureCache.end(); ) {
+        if (now - it->second.lastUsed > maxAgeTicks) {
+            glDeleteTextures(1, &it->second.texture);
+            it = textureCache.erase(it);
+            currentTileCount--;
+        } else {
+            ++it;
+        }
+    }
 }
 
 WorldBounds TileRenderer::GetWorldBounds() {
