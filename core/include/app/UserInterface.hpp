@@ -16,6 +16,8 @@
 
 namespace UserInterface {
 
+    inline constexpr float SIDEBAR_WIDTH = 320.0f;
+
     void SetCustomTheme();
 
     template <typename Callable>
@@ -34,6 +36,8 @@ namespace UserInterface {
         ImGui::PopFont();
         ImGui::PopStyleColor();
     }
+
+    void RenderDebug(Application::AppContext* appContext);
 
     void RenderMainPanel(Application::AppContext* appContext);
 

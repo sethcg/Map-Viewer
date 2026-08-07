@@ -35,9 +35,9 @@ namespace Application {
 
         std::unique_ptr<Camera> camera;
         std::unique_ptr<GeoJsonReader> geoJsonReader;
-        std::unique_ptr<TextRenderer> textRenderer;
         std::unique_ptr<TileRenderer> tileRenderer;
         std::unique_ptr<PolygonRenderer> polygonRenderer;
+        // std::unique_ptr<TextRenderer> textRenderer;
 
         AppContext() {
             filepath = "";

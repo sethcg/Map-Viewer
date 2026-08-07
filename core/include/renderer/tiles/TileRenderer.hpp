@@ -61,6 +61,10 @@ class TileRenderer {
 
         WorldBounds GetWorldBounds();
 
+        int GetTileCount() const { return tileCount; };
+
+        MapBounds GetMapBounds() const { return reader.GetBounds(); };
+
     private:
         GLuint LoadTexture(int z, int x, int y);
 
@@ -69,6 +73,7 @@ class TileRenderer {
         void Shutdown();
 
     private:
+        int tileCount = 0;
         TileReader reader;
 
         GLuint tileProgram = 0;

@@ -43,8 +43,8 @@ namespace Application {
 
         TTF_Init();
         TTF_Font* textFont = TTF_OpenFont("../assets/fonts/Roboto-Regular.ttf", 18.0f);
-        appContext.textRenderer = std::make_unique<TextRenderer>();
-        appContext.textRenderer->Init(textFont);
+        // appContext.textRenderer = std::make_unique<TextRenderer>();
+        // appContext.textRenderer->Init(textFont);
 
         appContext.tileRenderer = std::make_unique<TileRenderer>();
         appContext.tileRenderer->Init();
@@ -139,8 +139,8 @@ namespace Application {
         );
         appContext.camera->SetBounds(appContext.tileRenderer->GetWorldBounds());
 
-        appContext.textRenderer->UpdateFPS();
-        appContext.textRenderer->Render(width, height);
+        // appContext.textRenderer->UpdateFPS();
+        // appContext.textRenderer->Render(width, height);
     }
 
     SDL_AppResult App::Frame() {

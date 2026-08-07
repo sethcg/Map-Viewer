@@ -56,7 +56,7 @@ bool GeoJsonReader::open(const std::string& filename) {
     if (source) {
         source->SetAxisMappingStrategy(OAMS_TRADITIONAL_GIS_ORDER);
         if (source->IsSame(&target)) {
-            SDL_Log("DATA ALREADY EPSG:3857 - NO TRANSFORM");
+            // SDL_Log("DATA ALREADY EPSG:3857 - NO TRANSFORM");
             transform = nullptr;
         } else {
             transform = OGRCreateCoordinateTransformation(source, &target);
@@ -64,16 +64,16 @@ bool GeoJsonReader::open(const std::string& filename) {
                 SDL_Log("FAILED TO CREATE CRS TRANSFORM");
                 return false;
             }
-            SDL_Log("CREATED CRS TRANSFORM -> EPSG:3857");
+            // SDL_Log("CREATED CRS TRANSFORM -> EPSG:3857");
         }
     } else {
-        SDL_Log("NO CRS FOUND - ASSUMING EPSG:4326");
+        // SDL_Log("NO CRS FOUND - ASSUMING EPSG:4326");
         OGRSpatialReference assumed;
         assumed.importFromEPSG(4326);
         assumed.SetAxisMappingStrategy(OAMS_TRADITIONAL_GIS_ORDER);
         transform = OGRCreateCoordinateTransformation(&assumed, &target);
         if (!transform) {
-            SDL_Log("FAILED TO CREATE DEFAULT TRANSFORM");
+            // SDL_Log("FAILED TO CREATE DEFAULT TRANSFORM");
             return false;
         }
     }
@@ -108,17 +108,7 @@ std::vector<GeoFeature> GeoJsonReader::readAll() {
     OGRFeature* feature;
     while ((feature = layer->GetNextFeature()) != nullptr) {
         OGRGeometry* geometry = feature->GetGeometryRef();
-
-        OGREnvelope env;
-        geometry->getEnvelope(&env);
-        SDL_Log("Top Left     : %.8f, %.8f", env.MinX, env.MaxY);
-        SDL_Log("Top Right    : %.8f, %.8f", env.MaxX, env.MaxY);
-        SDL_Log("Bottom Left  : %.8f, %.8f", env.MinX, env.MinY);
-        SDL_Log("Bottom Right : %.8f, %.8f", env.MaxX, env.MinY);
-
-        if (geometry) {
-            processGeometry(geometry, result);
-        }
+        if (geometry) processGeometry(geometry, result);
         OGRFeature::DestroyFeature(feature);
     }
 
@@ -288,7 +278,7 @@ void GeoJsonReader::processPolygon(OGRPolygon* polygon, GeoFeature& feature) {
 
 
     if (validHoles.size() > MAX_HOLES) {
-        SDL_Log("POLYGON HAS %zu HOLES, KEEPING LARGEST %d", validHoles.size(), MAX_HOLES);
+        // SDL_Log("POLYGON HAS %zu HOLES, KEEPING LARGEST %d", validHoles.size(), MAX_HOLES);
         std::sort(
             validHoles.begin(),
             validHoles.end(),

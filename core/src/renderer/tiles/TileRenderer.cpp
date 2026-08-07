@@ -18,9 +18,6 @@
 #include <RendererHelper.hpp>
 #include <TileRenderer.hpp>
 
-// DEBUG TOOL TO GET TILE TEXTURES CACHED
-int currentTileCount = 0;
-
 namespace {
     int WorldToTileX(double x, int z) {
         const double tilesPerAxis = std::ldexp(1.0, z);
@@ -138,15 +135,16 @@ GLuint TileRenderer::LoadTexture(int z, int x, int y) {
             &channels,
             STBI_rgb_alpha
         );
+    tileCount++;
 
-        SDL_Log("TILES LOADED: %d", currentTileCount++);
-        SDL_Log("LOADED TILE %dx%d CHANNELS=%d FIRST PIXEL RGBA: %d %d %d %d",
-            width, height, channels,
-            pixels[0],
-            pixels[1],
-            pixels[2],
-            pixels[3]
-        );
+        // SDL_Log("TILES LOADED: %d", tileCount++);
+        // SDL_Log("LOADED TILE %dx%d CHANNELS=%d FIRST PIXEL RGBA: %d %d %d %d",
+        //     width, height, channels,
+        //     pixels[0],
+        //     pixels[1],
+        //     pixels[2],
+        //     pixels[3]
+        // );
 
     if (!pixels) {
         SDL_Log("STB_IMAGE FAILED: %s", stbi_failure_reason());
@@ -247,7 +245,7 @@ void TileRenderer::PurgeUnusedTextures(uint64_t maxAgeTicks) {
         if (now - it->second.lastUsed > maxAgeTicks) {
             glDeleteTextures(1, &it->second.texture);
             it = textureCache.erase(it);
-            currentTileCount--;
+            tileCount--;
         } else {
             ++it;
         }

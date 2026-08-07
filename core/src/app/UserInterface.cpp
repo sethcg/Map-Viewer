@@ -14,8 +14,7 @@
 
 namespace UserInterface {
 
-    static bool showTooltipIcons = false;
-    static int selectedColorRampIndex = 0;
+    static bool showSidebar = true;
 
     void SetCustomTheme() {
         ImGuiStyle& style = ImGui::GetStyle();
@@ -100,16 +99,109 @@ namespace UserInterface {
         style.Colors[ImGuiCol_SeparatorActive]      = ImVec4(AccentBase.r, AccentBase.g, AccentBase.b, 1.00f);
     }
 
-    void RenderMainPanel(Application::AppContext* appContext) {
-        ImVec2 minSize(float(MINIMUM_WINDOW_WIDTH) / 2.0f, float(MINIMUM_WINDOW_HEIGHT) / 2.0f);
-        ImVec2 maxSize(FLT_MAX, FLT_MAX);
-        ImGui::SetNextWindowSize(minSize, ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowSizeConstraints(minSize, maxSize);
-        ImGui::Begin("##CONTROL_PANEL", nullptr, ImGuiWindowFlags_NoCollapse);
+    void RenderDebug(Application::AppContext* appContext) {
+        static const MapBounds mapBounds = appContext->tileRenderer->GetMapBounds();
+        static float fps = 0.0f;
+        static float timer = 0.0f;
+        static int tile_count = 0;
 
-        ImGui::Button("Placeholder");
+        timer += ImGui::GetIO().DeltaTime;
+        if (timer >= 0.5f) {
+            tile_count = appContext->tileRenderer->GetTileCount();
+            fps = ImGui::GetIO().Framerate;
+            timer = 0.0f;
+        }
 
+        ImGui::Indent();
+
+        ImGui::Text("FPS: %.1f", fps);
+        ImGui::Text("TILES LOADED: %d", tile_count);
+
+        ImGui::Text("MAP BOUNDS");
+        ImGui::Indent();
+        if (ImGui::BeginTable("MAP_BOUNDS", 2, ImGuiTableFlags_SizingFixedFit)) {
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn(); ImGui::Text("NORTH:");
+            ImGui::TableNextColumn(); ImGui::Text("%.8f", mapBounds.north);
+
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn(); ImGui::Text("SOUTH:");
+            ImGui::TableNextColumn(); ImGui::Text("%.8f", mapBounds.south);
+
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn(); ImGui::Text("EAST:");
+            ImGui::TableNextColumn(); ImGui::Text("%.8f", mapBounds.east);
+
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn(); ImGui::Text("WEST:");
+            ImGui::TableNextColumn(); ImGui::Text("%.8f", mapBounds.west);
+
+            ImGui::EndTable();
+        }
+        ImGui::Unindent();
+
+        ImGui::Unindent();
+    }
+
+    void RenderSidebar(Application::AppContext* appContext) {
+        ImGuiViewport* viewport = ImGui::GetMainViewport();
+
+        ImGui::SetNextWindowPos(viewport->WorkPos,ImGuiCond_Always);
+        ImGui::SetNextWindowSize(ImVec2(SIDEBAR_WIDTH, viewport->WorkSize.y));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+        ImGui::Begin(
+            "CONTROL_PANEL", nullptr,
+            ImGuiWindowFlags_NoTitleBar |
+            ImGuiWindowFlags_NoMove |
+            ImGuiWindowFlags_NoResize |
+            ImGuiWindowFlags_NoCollapse |
+            ImGuiWindowFlags_NoBackground
+        );
+        ImGui::PopStyleVar();
+
+        const char* header = "CONTROLS";
+        ImGuiID headerId = ImGui::GetID(header);
+        bool isOpen = ImGui::GetStateStorage()->GetBool(headerId, true);
+
+        // ADD THE SEMI-TRANSPARENT BACKGROUND
+        if(isOpen) {
+            ImVec2 min_point = ImGui::GetCursorScreenPos();
+            ImVec2 max_point = ImVec2(min_point.x + SIDEBAR_WIDTH, min_point.y + viewport->WorkSize.y);
+            ImGui::GetWindowDrawList()->AddRectFilled(
+                min_point, max_point,
+                ImGui::GetColorU32(ImVec4(0.06f, 0.06f, 0.06f, 0.85f)),
+                ImGui::GetStyle().ChildRounding
+            );
+        }
+
+        ImGui::PushFont(appContext->fontBold);
+        ImGui::PushStyleColor(ImGuiCol_Header,        ImVec4(0.00f, 0.62f, 0.46f, 1.00f));
+        ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.00f, 0.70f, 0.52f, 1.00f));
+        ImGui::PushStyleColor(ImGuiCol_HeaderActive,  ImVec4(0.00f, 0.55f, 0.40f, 1.00f));
+        if (ImGui::CollapsingHeader(header, ImGuiTreeNodeFlags_DefaultOpen)) { 
+            ImGui::PopFont();
+            ImGui::PopStyleColor(3);
+
+            float contentHeight = viewport->WorkSize.y - ImGui::GetCursorPosY();
+            ImGui::BeginChild("CONTENT", ImVec2(0, contentHeight), false);
+
+            // if (ImGui::CollapsingHeader("TEST", ImGuiTreeNodeFlags_DefaultOpen)) {
+
+            // }
+
+            RenderDebug(appContext);
+            
+            ImGui::EndChild();
+        } else {
+            ImGui::PopFont();
+            ImGui::PopStyleColor(3);
+        }
+        
         ImGui::End();
+    }
+
+    void RenderMainPanel(Application::AppContext* appContext) {
+        RenderSidebar(appContext);
     }
 
 }
