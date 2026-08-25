@@ -1,5 +1,6 @@
 #include <algorithm>
 
+#include <SDL3/SDL.h>
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -22,12 +23,9 @@ void Camera::UpdateProjection() {
     float halfHeight = (height * 0.5f) / zoom;
 
     projection = glm::ortho(
-        -halfWidth,
-         halfWidth,
-        -halfHeight,
-         halfHeight,
-        -1.0f,
-         1.0f
+        -halfWidth, halfWidth,
+        -halfHeight, halfHeight,
+        -1.0f, 1.0f
     );
 }
 
@@ -51,10 +49,13 @@ void Camera::ProcessMouseMotion(float xrel, float yrel) {
 }
 
 void Camera::ProcessMouseWheel(float wheel) {
-    if (wheel > 0)
-        zoom *= 1.15f;
-    else if (wheel < 0)
-        zoom /= 1.15f;
+    constexpr float zoomStep = 0.05f;
+
+    if (wheel > 0.0f) {
+        zoom += zoomStep;
+    } else if (wheel < 0.0f) {
+        zoom -= zoomStep;
+    }
 
     zoom = glm::clamp(zoom, minZoom, maxZoom);
 
@@ -65,18 +66,6 @@ void Camera::ProcessMouseWheel(float wheel) {
 void Camera::SetPosition(const glm::vec2& pos) {
     position = pos;
     UpdateView();
-}
-
-void Camera::SetTileZoom(int zoomLevel, double worldSize) {
-    double tileWorldSize = worldSize / (1 << zoomLevel);
-    
-    double tilesX = sqrt(MAX_VISIBLE_TILES * width / double(height));
-    double tilesY = MAX_VISIBLE_TILES / tilesX;
-
-    minZoom = std::max(
-        width / (tilesX * tileWorldSize),
-        height / (tilesY * tileWorldSize)
-    );
 }
 
 void Camera::ClampToBounds() {

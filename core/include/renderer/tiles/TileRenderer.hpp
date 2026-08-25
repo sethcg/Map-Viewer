@@ -47,15 +47,21 @@ class TileRenderer {
 
         bool Init();
 
+        bool InitDebug();
+
         bool LoadTiles(const std::string& filename);
 
-        void Render(const glm::mat4& viewProjection, const ViewBounds& cameraBounds);
+        void Render(const glm::mat4& viewProjection, const ViewBounds& cameraBounds, float cameraZoom);
 
         TileCenter GetCenter();
 
         void PurgeUnusedTextures(uint64_t maxAgeTicks);
 
-        int GetZoomLevel() const { return zoomLevel; };
+        int GetTileZoomLevel(float cameraZoom) const;
+
+        int GetMinZoom() const { return reader.GetZoomInfo().minZoom; };
+
+        int GetMaxZoom() const { return reader.GetZoomInfo().maxZoom; };
 
         double GetWorldSize() const { return WORLD_SIZE; };
 
@@ -68,7 +74,9 @@ class TileRenderer {
     private:
         GLuint LoadTexture(int z, int x, int y);
 
-        void DrawTile(int x, int y, GLuint texture, const glm::mat4& viewProjection);
+        void DrawTile(int zoomLevel, int x, int y, GLuint texture, const glm::mat4& viewProjection);
+
+        void DrawTileBorder(int zoomLevel, int x, int y, const glm::mat4& viewProjection);
 
         void Shutdown();
 
@@ -77,10 +85,13 @@ class TileRenderer {
         TileReader reader;
 
         GLuint tileProgram = 0;
-        GLuint vao = 0;
-        GLuint vbo = 0;
+        GLuint tileVAO = 0;
+        GLuint tileVBO = 0;
 
-        int zoomLevel = 17;
+        bool debugTileBorders = false;
+        GLuint debugProgram = 0;
+        GLuint debugVAO = 0;
+        GLuint debugVBO = 0;
 
         std::unordered_map<TileKey, CachedTexture, TileKeyHash> textureCache;
 };

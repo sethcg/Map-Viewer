@@ -62,41 +62,49 @@ bool TileRenderer::Init() {
         -1.0f,  1.0f, 0.0f, 0.0f
     };
 
-    glGenVertexArrays(1, &vao);
-    glGenBuffers(1, &vbo);
+    glGenVertexArrays(1, &tileVAO);
+    glGenBuffers(1, &tileVBO);
 
-    glBindVertexArray(vao);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBindVertexArray(tileVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, tileVBO);
 
-    glBufferData(
-        GL_ARRAY_BUFFER,
-        sizeof(vertices),
-        vertices,
-        GL_STATIC_DRAW
-    );
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(
-        0,
-        2,
-        GL_FLOAT,
-        GL_FALSE,
-        4 * sizeof(float),
-        nullptr
-    );
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), nullptr);
 
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(
-        1,
-        2,
-        GL_FLOAT,
-        GL_FALSE,
-        4 * sizeof(float),
-        (void*)(2 * sizeof(float))
-    );
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
 
     glBindVertexArray(0);
     return true;
+}
+
+bool TileRenderer::InitDebug() {
+    debugTileBorders = true;
+
+    debugProgram = Renderer::CreateShaderProgramFromFiles(
+        "../assets/shaders/tile/tile_debug.vert",
+        "../assets/shaders/tile/tile_debug.frag"
+    );
+
+    if (!debugProgram) {
+        SDL_Log("FAILED TO CREATE TILE DEBUG SHADER");
+        return false;
+    }
+
+    glGenVertexArrays(1, &debugVAO);
+    glGenBuffers(1, &debugVBO);
+
+    glBindVertexArray(debugVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, debugVBO);
+
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 8, nullptr, GL_DYNAMIC_DRAW);
+
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2,  GL_FLOAT, GL_FALSE, 2 * sizeof(float), nullptr);
+
+    glBindVertexArray(0);
 }
 
 bool TileRenderer::LoadTiles(const std::string& filename) {
@@ -105,8 +113,6 @@ bool TileRenderer::LoadTiles(const std::string& filename) {
 
 GLuint TileRenderer::LoadTexture(int z, int x, int y) {
     TileKey key{x, y, z};
-
-    zoomLevel = reader.GetZoomInfo().centerZoom;
 
     auto found = textureCache.find(key);
     if (found != textureCache.end()) {
@@ -130,21 +136,19 @@ GLuint TileRenderer::LoadTexture(int z, int x, int y) {
         stbi_load_from_memory(
             data.data(),
             static_cast<int>(data.size()),
-            &width,
-            &height,
-            &channels,
+            &width, &height, &channels,
             STBI_rgb_alpha
         );
     tileCount++;
 
-        // SDL_Log("TILES LOADED: %d", tileCount++);
-        // SDL_Log("LOADED TILE %dx%d CHANNELS=%d FIRST PIXEL RGBA: %d %d %d %d",
-        //     width, height, channels,
-        //     pixels[0],
-        //     pixels[1],
-        //     pixels[2],
-        //     pixels[3]
-        // );
+    // SDL_Log("TILES LOADED: %d", tileCount++);
+    // SDL_Log("LOADED TILE %dx%d CHANNELS=%d FIRST PIXEL RGBA: %d %d %d %d",
+    //     width, height, channels,
+    //     pixels[0],
+    //     pixels[1],
+    //     pixels[2],
+    //     pixels[3]
+    // );
 
     if (!pixels) {
         SDL_Log("STB_IMAGE FAILED: %s", stbi_failure_reason());
@@ -152,45 +156,15 @@ GLuint TileRenderer::LoadTexture(int z, int x, int y) {
     }
 
     GLuint texture = 0;
-
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
 
-    glTexParameteri(
-        GL_TEXTURE_2D,
-        GL_TEXTURE_MIN_FILTER,
-        GL_LINEAR
-    );
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-    glTexParameteri(
-        GL_TEXTURE_2D,
-        GL_TEXTURE_MAG_FILTER,
-        GL_LINEAR
-    );
-
-    glTexParameteri(
-        GL_TEXTURE_2D,
-        GL_TEXTURE_WRAP_S,
-        GL_CLAMP_TO_EDGE
-    );
-
-    glTexParameteri(
-        GL_TEXTURE_2D,
-        GL_TEXTURE_WRAP_T,
-        GL_CLAMP_TO_EDGE
-    );
-
-    glTexImage2D(
-        GL_TEXTURE_2D,
-        0,
-        GL_RGBA8,
-        width,
-        height,
-        0,
-        GL_RGBA,
-        GL_UNSIGNED_BYTE,
-        pixels
-    );
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 
     stbi_image_free(pixels);
 
@@ -199,17 +173,30 @@ GLuint TileRenderer::LoadTexture(int z, int x, int y) {
         glDeleteTextures(1, &texture);
         return 0;
     }
-    textureCache.emplace(
-        key, CachedTexture{ 
-            texture,
-            SDL_GetPerformanceCounter()
-        }
-    );
+
+    textureCache.emplace(key, CachedTexture{ texture, SDL_GetPerformanceCounter() });
 
     return texture;
 }
 
-void TileRenderer::Render(const glm::mat4& viewProjection, const ViewBounds& cameraBounds) {
+int TileRenderer::GetTileZoomLevel(float cameraZoom) const {
+    const auto& zoomInfo = reader.GetZoomInfo();
+
+    const int minTileZoom = zoomInfo.minZoom;
+    const int maxTileZoom = zoomInfo.maxZoom;
+
+    float normalizedZoom = std::clamp(cameraZoom, 0.0f, 1.0f);
+
+    const int zoomLevels = maxTileZoom - minTileZoom;
+    int tileZoom = minTileZoom + static_cast<int>(std::floor(normalizedZoom * (zoomLevels + 1)));
+
+    return std::clamp(tileZoom, minTileZoom, maxTileZoom);
+}
+
+void TileRenderer::Render(const glm::mat4& viewProjection, const ViewBounds& cameraBounds, float cameraZoom) {
+    int zoomLevel = GetTileZoomLevel(cameraZoom);
+    // SDL_Log("TILE RENDER: CAMERA ZOOM = %.3f TILE ZOOM = %d ", cameraZoom, zoomLevel);
+        
     int minX = WorldToTileX(cameraBounds.minX, zoomLevel);
     int maxX = WorldToTileX(cameraBounds.maxX, zoomLevel);
     int minY = WorldToTileY(cameraBounds.maxY, zoomLevel);
@@ -220,8 +207,11 @@ void TileRenderer::Render(const glm::mat4& viewProjection, const ViewBounds& cam
             GLuint texture = LoadTexture(zoomLevel, x, y);
 
             if (!texture) continue;
+            DrawTile(zoomLevel, x, y, texture, viewProjection);
 
-            DrawTile(x, y, texture, viewProjection);
+            if (debugTileBorders) {
+                DrawTileBorder(zoomLevel, x, y, viewProjection);
+            }
         }
     }
 
@@ -253,17 +243,17 @@ void TileRenderer::PurgeUnusedTextures(uint64_t maxAgeTicks) {
 }
 
 WorldBounds TileRenderer::GetWorldBounds() {
-    MapBounds map = reader.GetBounds();
+    MapBounds bounds = reader.GetBounds();
     
     return {
-        LonToWorldX(map.west),
-        LatToWorldY(map.south),
-        LonToWorldX(map.east),
-        LatToWorldY(map.north)
+        LonToWorldX(bounds.west),
+        LatToWorldY(bounds.south),
+        LonToWorldX(bounds.east),
+        LatToWorldY(bounds.north)
     };
 }
 
-void TileRenderer::DrawTile(int x, int y, GLuint texture, const glm::mat4& vp) {
+void TileRenderer::DrawTile(int zoomLevel, int x, int y, GLuint texture, const glm::mat4& viewProjection) {
     const double tileSize = WORLD_SIZE / (1 << zoomLevel);
 
     const double minX = -ORIGIN_SHIFT + x * tileSize;
@@ -271,10 +261,10 @@ void TileRenderer::DrawTile(int x, int y, GLuint texture, const glm::mat4& vp) {
 
     glm::mat4 model(1.0f);
 
-    // Move tile center into world coordinates
+    // MOVE TILE CENTER INTO WORLD COORDS
     model = glm::translate(model, glm::vec3(minX + tileSize * 0.5, maxY - tileSize * 0.5, 0.0f));
 
-    // Quad is -1..1, so scale by half tile size
+    // QUAD IS -1..1 (SCALE BY HALF TILE SIZE)
     constexpr double overlap = 1.001;
     model = glm::scale(model, glm::vec3(
         tileSize * 0.5 * overlap, 
@@ -284,28 +274,51 @@ void TileRenderer::DrawTile(int x, int y, GLuint texture, const glm::mat4& vp) {
 
     glUseProgram(tileProgram);
 
-    glUniformMatrix4fv(
-        glGetUniformLocation(tileProgram, "uVP"),
-        1,
-        GL_FALSE,
-        glm::value_ptr(vp)
-    );
-
-    glUniformMatrix4fv(
-        glGetUniformLocation(tileProgram, "uModel"),
-        1,
-        GL_FALSE,
-        glm::value_ptr(model)
-    );
-
+    glUniformMatrix4fv(glGetUniformLocation(tileProgram, "uVP"), 1, GL_FALSE, glm::value_ptr(viewProjection));
+    glUniformMatrix4fv(glGetUniformLocation(tileProgram, "uModel"), 1, GL_FALSE, glm::value_ptr(model));
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture);
 
     glUniform1i(glGetUniformLocation(tileProgram, "tileTexture"), 0);
 
-    glBindVertexArray(vao);
+    glBindVertexArray(tileVAO);
     glDrawArrays(GL_TRIANGLES, 0, 6);
+    glBindVertexArray(0);
+}
+
+void TileRenderer::DrawTileBorder(int zoomLevel, int x, int y, const glm::mat4& viewProjection) {
+    const double tileSize = WORLD_SIZE / std::ldexp(1.0, zoomLevel);
+
+    const double minX = -ORIGIN_SHIFT + x * tileSize;
+    const double maxX = minX + tileSize;
+    const double maxY = ORIGIN_SHIFT - y * tileSize;
+    const double minY = maxY - tileSize;
+
+    float vertices[] = {
+        static_cast<float>(minX),
+        static_cast<float>(minY),
+
+        static_cast<float>(maxX),
+        static_cast<float>(minY),
+
+        static_cast<float>(maxX),
+        static_cast<float>(maxY),
+
+        static_cast<float>(minX),
+        static_cast<float>(maxY)
+    };
+
+    glUseProgram(debugProgram);
+
+    glUniformMatrix4fv(glGetUniformLocation(debugProgram, "uVP"), 1, GL_FALSE, glm::value_ptr(viewProjection));
+
+    glBindVertexArray(debugVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, debugVBO);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
+
+    glLineWidth(2.0f);
+    glDrawArrays(GL_LINE_LOOP, 0, 4);
     glBindVertexArray(0);
 }
 
@@ -314,10 +327,13 @@ void TileRenderer::Shutdown() {
         if (texture.texture) glDeleteTextures(1, &texture.texture);
     }
 
-textureCache.clear();
     textureCache.clear();
 
-    if (vbo) glDeleteBuffers(1, &vbo);
-    if (vao) glDeleteVertexArrays(1, &vao);
+    if (debugVBO) glDeleteBuffers(1, &debugVBO);
+    if (debugVAO) glDeleteVertexArrays(1, &debugVAO);
+    if (debugProgram) glDeleteProgram(debugProgram);
+
+    if (tileVBO) glDeleteBuffers(1, &tileVBO);
+    if (tileVAO) glDeleteVertexArrays(1, &tileVAO);
     if (tileProgram) glDeleteProgram(tileProgram);
 }

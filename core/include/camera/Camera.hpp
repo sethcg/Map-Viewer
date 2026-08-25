@@ -62,10 +62,9 @@ class Camera {
         int width = 1280;
         int height = 720;
 
-        float zoom = 1.0f;
-
-        float minZoom = 0.2f;
-        float maxZoom = 10.0f;
+        float zoom = 0.5f;
+        float minZoom = 0.1f;
+        float maxZoom = 1.0f;
 
         bool hasBounds = false;
 

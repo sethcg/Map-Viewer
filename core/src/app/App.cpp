@@ -48,13 +48,10 @@ namespace Application {
 
         appContext.tileRenderer = std::make_unique<TileRenderer>();
         appContext.tileRenderer->Init();
+        appContext.tileRenderer->InitDebug();
         appContext.tileRenderer->LoadTiles("../data/tiles/quantico_hybrid_map.sqlite");
 
         appContext.camera = std::make_unique<Camera>(WINDOW_WIDTH, WINDOW_HEIGHT);
-        appContext.camera->SetTileZoom(
-            appContext.tileRenderer->GetZoomLevel(),
-            appContext.tileRenderer->GetWorldSize()
-        );
 
         // INITIALIZE CAMERA TO THE TILE DATA
         TileCenter startPosition = appContext.tileRenderer->GetCenter();
@@ -133,11 +130,12 @@ namespace Application {
         // DISABLED UNTIL FIXED, CURRENTLY THE ENTIRE THING IS OPAQUE BLOCKING THE MAP VIEW
         // appContext.polygonRenderer->Render(viewProjection);
 
-        appContext.tileRenderer->Render(
-            viewProjection, 
-            appContext.camera->GetVisibleBounds()
-        );
         appContext.camera->SetBounds(appContext.tileRenderer->GetWorldBounds());
+        appContext.tileRenderer->Render(
+            viewProjection,
+            appContext.camera->GetVisibleBounds(),
+            appContext.camera->GetZoom()
+        );
 
         // appContext.textRenderer->UpdateFPS();
         // appContext.textRenderer->Render(width, height);
