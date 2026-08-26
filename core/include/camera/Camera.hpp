@@ -3,29 +3,26 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <TileRenderer.hpp>
+
 // BOUND FOR THE MIN ZOOM ALLOWED,
 // PERFORMANCE CONCERN IF LOADING TOO MANY TILES
 constexpr double MAX_VISIBLE_TILES = 200.0;
 
-struct ViewBounds {
-    double minX;
-    double minY;
-    double maxX;
-    double maxY;
-};
-
-struct WorldBounds {
-    double minX;
-    double minY;
-    double maxX;
-    double maxY;
-};
-
 class Camera {
     public:
-        Camera(int windowWidth, int windowHeight) : width(windowWidth), height(windowHeight) {
+        Camera(int windowWidth, int windowHeight, TileCenter center, WorldBounds bounds) : 
+            width(windowWidth), height(windowHeight) {
             UpdateProjection();
             UpdateView();
+            
+            // INITIALIZE CAMERA TO THE TILE DATA
+            SetBounds(bounds);
+
+            SetPosition(glm::vec2(
+                static_cast<float>(center.x), 
+                static_cast<float>(center.y)
+            ));
         }
         ~Camera() = default;
 
@@ -41,15 +38,11 @@ class Camera {
 
         void SetPosition(const glm::vec2& position);
 
-        void SetTileZoom(int zoomLevel, double worldSize);
-
         void ClampToBounds();
 
         void SetBounds(const WorldBounds& bounds);
 
         float GetZoom() const { return zoom; }
-
-        glm::vec2 GetPosition() const { return position; }
 
         glm::mat4 GetViewProjection() const { return projection * view; }
 

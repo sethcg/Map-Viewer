@@ -6,6 +6,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <Camera.hpp>
+#include <TileRenderer.hpp>
 
 void Camera::Update(float deltaTime) {
     UpdateView();

@@ -7,7 +7,6 @@
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 
-#include <Camera.hpp>
 #include <TileReader.hpp>
 
 constexpr double ORIGIN_SHIFT = 20037508.342789244;
@@ -40,6 +39,20 @@ struct TileCenter {
     double y;
 };
 
+struct WorldBounds {
+    double minX;
+    double minY;
+    double maxX;
+    double maxY;
+};
+
+struct ViewBounds {
+    double minX;
+    double minY;
+    double maxX;
+    double maxY;
+};
+
 class TileRenderer {
     public:
         TileRenderer() = default;
@@ -53,23 +66,19 @@ class TileRenderer {
 
         void Render(const glm::mat4& viewProjection, const ViewBounds& cameraBounds, float cameraZoom);
 
-        TileCenter GetCenter();
-
         void PurgeUnusedTextures(uint64_t maxAgeTicks);
 
-        int GetTileZoomLevel(float cameraZoom) const;
+        int CalculateTileZoomLevel(float cameraZoom) const;
 
-        int GetMinZoom() const { return reader.GetZoomInfo().minZoom; };
+        int GetTileZoomLevel() const { return tileZoomLevel; };
 
-        int GetMaxZoom() const { return reader.GetZoomInfo().maxZoom; };
-
-        double GetWorldSize() const { return WORLD_SIZE; };
+        TileCenter GetCenter();
 
         WorldBounds GetWorldBounds();
 
-        int GetTileCount() const { return tileCount; };
-
         MapBounds GetMapBounds() const { return reader.GetBounds(); };
+
+        int GetTileCount() const { return tileCount; };
 
         bool& GetTileBorderEnabled() { return tileBorderEnabled; };
 
@@ -83,8 +92,10 @@ class TileRenderer {
         void Shutdown();
 
     private:
-        int tileCount = 0;
         TileReader reader;
+
+        int tileCount = 0;
+        int tileZoomLevel = 0;
 
         GLuint tileProgram = 0;
         GLuint tileVAO = 0;

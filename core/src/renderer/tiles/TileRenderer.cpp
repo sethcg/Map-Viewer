@@ -103,6 +103,7 @@ bool TileRenderer::InitDebug() {
     glVertexAttribPointer(0, 2,  GL_FLOAT, GL_FALSE, 2 * sizeof(float), nullptr);
 
     glBindVertexArray(0);
+    return true;
 }
 
 bool TileRenderer::LoadTiles(const std::string& filename) {
@@ -177,7 +178,7 @@ GLuint TileRenderer::LoadTexture(int z, int x, int y) {
     return texture;
 }
 
-int TileRenderer::GetTileZoomLevel(float cameraZoom) const {
+int TileRenderer::CalculateTileZoomLevel(float cameraZoom) const {
     const auto& zoomInfo = reader.GetZoomInfo();
 
     const int minTileZoom = zoomInfo.minZoom;
@@ -192,23 +193,23 @@ int TileRenderer::GetTileZoomLevel(float cameraZoom) const {
 }
 
 void TileRenderer::Render(const glm::mat4& viewProjection, const ViewBounds& cameraBounds, float cameraZoom) {
-    int zoomLevel = GetTileZoomLevel(cameraZoom);
+    tileZoomLevel = CalculateTileZoomLevel(cameraZoom);
     // SDL_Log("TILE RENDER: CAMERA ZOOM = %.3f TILE ZOOM = %d ", cameraZoom, zoomLevel);
         
-    int minX = WorldToTileX(cameraBounds.minX, zoomLevel);
-    int maxX = WorldToTileX(cameraBounds.maxX, zoomLevel);
-    int minY = WorldToTileY(cameraBounds.maxY, zoomLevel);
-    int maxY = WorldToTileY(cameraBounds.minY, zoomLevel);
+    int minX = WorldToTileX(cameraBounds.minX, tileZoomLevel);
+    int maxX = WorldToTileX(cameraBounds.maxX, tileZoomLevel);
+    int minY = WorldToTileY(cameraBounds.maxY, tileZoomLevel);
+    int maxY = WorldToTileY(cameraBounds.minY, tileZoomLevel);
 
     for (int y = minY; y <= maxY; y++) {
         for (int x = minX; x <= maxX; x++) {
-            GLuint texture = LoadTexture(zoomLevel, x, y);
+            GLuint texture = LoadTexture(tileZoomLevel, x, y);
 
             if (!texture) continue;
-            DrawTile(zoomLevel, x, y, texture, viewProjection);
+            DrawTile(tileZoomLevel, x, y, texture, viewProjection);
 
             if (tileBorderEnabled) {
-                DrawTileBorder(zoomLevel, x, y, viewProjection);
+                DrawTileBorder(tileZoomLevel, x, y, viewProjection);
             }
         }
     }
@@ -242,7 +243,6 @@ void TileRenderer::PurgeUnusedTextures(uint64_t maxAgeTicks) {
 
 WorldBounds TileRenderer::GetWorldBounds() {
     MapBounds bounds = reader.GetBounds();
-    
     return {
         LonToWorldX(bounds.west),
         LatToWorldY(bounds.south),

@@ -118,10 +118,10 @@ namespace UserInterface {
         ImGui::Checkbox("Tile Borders", &tileBorderEnabled);
         ImGui::Unindent();
 
-
         ImGui::Indent();
 
         ImGui::Text("FPS: %.1f", fps);
+        ImGui::Text("ZOOM LEVEL: %d", appContext->tileRenderer->GetTileZoomLevel());
         ImGui::Text("TILES LOADED: %d", tile_count);
 
         ImGui::Text("MAP BOUNDS");

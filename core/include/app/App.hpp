@@ -12,7 +12,6 @@
 #include <imgui_impl_opengl3.h>
 
 #include <AppContext.hpp>
-#include <TextRenderer.hpp>
 #include <UserInterface.hpp>
 
 namespace Application {

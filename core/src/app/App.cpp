@@ -12,7 +12,6 @@
 #include <App.hpp>
 #include <AppContext.hpp>
 #include <Camera.hpp>
-#include <TextRenderer.hpp>
 #include <PolygonRenderer.hpp>
 #include <UserInterface.hpp>
 
@@ -43,22 +42,18 @@ namespace Application {
 
         TTF_Init();
         TTF_Font* textFont = TTF_OpenFont("../assets/fonts/Roboto-Regular.ttf", 18.0f);
-        // appContext.textRenderer = std::make_unique<TextRenderer>();
-        // appContext.textRenderer->Init(textFont);
 
         appContext.tileRenderer = std::make_unique<TileRenderer>();
         appContext.tileRenderer->Init();
         appContext.tileRenderer->InitDebug();
         appContext.tileRenderer->LoadTiles("../data/tiles/quantico_hybrid_map.sqlite");
 
-        appContext.camera = std::make_unique<Camera>(WINDOW_WIDTH, WINDOW_HEIGHT);
-
-        // INITIALIZE CAMERA TO THE TILE DATA
-        TileCenter startPosition = appContext.tileRenderer->GetCenter();
-        appContext.camera->SetPosition(glm::vec2(
-            static_cast<float>(startPosition.x), 
-            static_cast<float>(startPosition.y)
-        ));
+        appContext.camera = std::make_unique<Camera>(
+            WINDOW_WIDTH, 
+            WINDOW_HEIGHT,
+            appContext.tileRenderer->GetCenter(),
+            appContext.tileRenderer->GetWorldBounds()
+        );
 
         appContext.geoJsonReader = std::make_unique<GeoJsonReader>();
         appContext.geoJsonReader->open("../data/footprint.geojson");
@@ -127,18 +122,14 @@ namespace Application {
 
         glm::mat4 viewProjection = appContext.camera->GetViewProjection();
         
-        // DISABLED UNTIL FIXED, CURRENTLY THE ENTIRE THING IS OPAQUE BLOCKING THE MAP VIEW
+        // DISABLED
         // appContext.polygonRenderer->Render(viewProjection);
 
-        appContext.camera->SetBounds(appContext.tileRenderer->GetWorldBounds());
         appContext.tileRenderer->Render(
             viewProjection,
             appContext.camera->GetVisibleBounds(),
             appContext.camera->GetZoom()
         );
-
-        // appContext.textRenderer->UpdateFPS();
-        // appContext.textRenderer->Render(width, height);
     }
 
     SDL_AppResult App::Frame() {

@@ -10,7 +10,6 @@
 
 #include <Camera.hpp>
 #include <GeoJsonReader.hpp>
-#include <TextRenderer.hpp>
 #include <TileRenderer.hpp>
 #include <PolygonRenderer.hpp>
 
@@ -37,7 +36,6 @@ namespace Application {
         std::unique_ptr<GeoJsonReader> geoJsonReader;
         std::unique_ptr<TileRenderer> tileRenderer;
         std::unique_ptr<PolygonRenderer> polygonRenderer;
-        // std::unique_ptr<TextRenderer> textRenderer;
 
         AppContext() {
             filepath = "";
