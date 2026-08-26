@@ -112,6 +112,13 @@ namespace UserInterface {
             timer = 0.0f;
         }
 
+        // ENABLE/DISABLE TILE BORDERS FOR DEBUGGING
+        ImGui::Indent();
+        bool& tileBorderEnabled = appContext->tileRenderer->GetTileBorderEnabled();
+        ImGui::Checkbox("Tile Borders", &tileBorderEnabled);
+        ImGui::Unindent();
+
+
         ImGui::Indent();
 
         ImGui::Text("FPS: %.1f", fps);
@@ -184,10 +191,6 @@ namespace UserInterface {
 
             float contentHeight = viewport->WorkSize.y - ImGui::GetCursorPosY();
             ImGui::BeginChild("CONTENT", ImVec2(0, contentHeight), false);
-
-            // if (ImGui::CollapsingHeader("TEST", ImGuiTreeNodeFlags_DefaultOpen)) {
-
-            // }
 
             RenderDebug(appContext);
             

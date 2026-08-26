@@ -81,8 +81,6 @@ bool TileRenderer::Init() {
 }
 
 bool TileRenderer::InitDebug() {
-    debugTileBorders = true;
-
     debugProgram = Renderer::CreateShaderProgramFromFiles(
         "../assets/shaders/tile/tile_debug.vert",
         "../assets/shaders/tile/tile_debug.frag"
@@ -209,7 +207,7 @@ void TileRenderer::Render(const glm::mat4& viewProjection, const ViewBounds& cam
             if (!texture) continue;
             DrawTile(zoomLevel, x, y, texture, viewProjection);
 
-            if (debugTileBorders) {
+            if (tileBorderEnabled) {
                 DrawTileBorder(zoomLevel, x, y, viewProjection);
             }
         }

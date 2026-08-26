@@ -71,6 +71,8 @@ class TileRenderer {
 
         MapBounds GetMapBounds() const { return reader.GetBounds(); };
 
+        bool& GetTileBorderEnabled() { return tileBorderEnabled; };
+
     private:
         GLuint LoadTexture(int z, int x, int y);
 
@@ -88,7 +90,7 @@ class TileRenderer {
         GLuint tileVAO = 0;
         GLuint tileVBO = 0;
 
-        bool debugTileBorders = false;
+        bool tileBorderEnabled = false;
         GLuint debugProgram = 0;
         GLuint debugVAO = 0;
         GLuint debugVBO = 0;
