@@ -16,7 +16,6 @@ ENDFOREACH()
 # LINK LIBRARIES TO CORE
 TARGET_LINK_LIBRARIES(core PUBLIC
     SDL3::SDL3
-    SDL3_ttf::SDL3_ttf
     glm::glm
     OpenGL::GL
     glad::glad

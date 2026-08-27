@@ -3,7 +3,6 @@
 #include <string>
 
 #include <SDL3/SDL.h>
-#include <SDL3_ttf/SDL_ttf.h>
 #include <glad/glad.h>
 #include <imgui.h>
 #include <imgui_impl_sdl3.h>
@@ -39,9 +38,6 @@ namespace Application {
         if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) return SDL_APP_FAILURE;
         if (!CreateSDLWindow("Map Viewer")) return SDL_APP_FAILURE;
         if (!CreateGLContext(false)) return SDL_APP_FAILURE;
-
-        TTF_Init();
-        TTF_Font* textFont = TTF_OpenFont("../assets/fonts/Roboto-Regular.ttf", 18.0f);
 
         appContext.tileRenderer = std::make_unique<TileRenderer>();
         appContext.tileRenderer->Init();

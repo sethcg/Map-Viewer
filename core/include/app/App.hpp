@@ -5,7 +5,6 @@
 #include <string>
 
 #include <SDL3/SDL.h>
-#include <SDL3_ttf/SDL_ttf.h>
 #include <glad/glad.h>
 #include <imgui.h>
 #include <imgui_impl_sdl3.h>
