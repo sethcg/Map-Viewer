@@ -141,7 +141,7 @@ namespace Application {
         // RENDER GUI
         UserInterface::RenderMainPanel(&appContext);
 
-        // RENDER SCENE (CAMERA, CUBE, TEXT, ...)
+        // RENDER SCENE (CAMERA, CUBE, ...)
         RenderScene(deltaTime);
 
         ImGui::Render();

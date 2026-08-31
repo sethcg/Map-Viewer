@@ -121,9 +121,6 @@ GLuint TileRenderer::LoadTexture(int z, int x, int y) {
 
     std::vector<uint8_t> data;
     if (!reader.GetTile(z, x, y, data)) {
-        // EXPECTED WHEN THE CAMERA IS OUTSIDE THE MAP BOUNDS
-        // TODO: FIX BY CLAMPING THE CAMERA TO THE TILEMAP BOUNDS SET IN THE METADATA
-        // SDL_Log("MISSING TILE: %d/%d/%d", z, x, y);
         return 0;
     }
 
@@ -139,15 +136,6 @@ GLuint TileRenderer::LoadTexture(int z, int x, int y) {
             STBI_rgb_alpha
         );
     tileCount++;
-
-    // SDL_Log("TILES LOADED: %d", tileCount++);
-    // SDL_Log("LOADED TILE %dx%d CHANNELS=%d FIRST PIXEL RGBA: %d %d %d %d",
-    //     width, height, channels,
-    //     pixels[0],
-    //     pixels[1],
-    //     pixels[2],
-    //     pixels[3]
-    // );
 
     if (!pixels) {
         SDL_Log("STB_IMAGE FAILED: %s", stbi_failure_reason());
@@ -194,7 +182,6 @@ int TileRenderer::CalculateTileZoomLevel(float cameraZoom) const {
 
 void TileRenderer::Render(const glm::mat4& viewProjection, const ViewBounds& cameraBounds, float cameraZoom) {
     tileZoomLevel = CalculateTileZoomLevel(cameraZoom);
-    // SDL_Log("TILE RENDER: CAMERA ZOOM = %.3f TILE ZOOM = %d ", cameraZoom, zoomLevel);
         
     int minX = WorldToTileX(cameraBounds.minX, tileZoomLevel);
     int maxX = WorldToTileX(cameraBounds.maxX, tileZoomLevel);
